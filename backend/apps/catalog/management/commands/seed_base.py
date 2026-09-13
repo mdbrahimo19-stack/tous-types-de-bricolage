@@ -69,7 +69,7 @@ BLIDA_COMMUNES = [
     "Djebabra",
 ]
 
-# Wilaya de Tizi Ouzou (15) — 55/67 communes vérifiées (voir note en tête de fichier).
+# Wilaya de Tizi Ouzou (15) — 65/67 communes vérifiées (voir note en tête de fichier).
 TIZI_OUZOU_COMMUNES = [
     "Tizi Ouzou", "Tizi Rached", "Abi Youcef", "Aghribs", "Agouni Gueghrane",
     "Aïn El Hammam", "Aïn Zaouia", "Aït Aïcha", "Aït Aïssa Mimoun", "Aït Aïssi",
@@ -78,9 +78,11 @@ TIZI_OUZOU_COMMUNES = [
     "Akbil", "Akerrou", "Assi Youcef", "Azazga", "Azeffoun", "Beni Douala",
     "Beni Yenni", "Beni Zmenzer", "Boghni", "Boudjima", "Bounouh", "Bouzeguène",
     "Draâ Ben Khedda", "Draâ El Mizan", "Freha", "Frikat", "Iboudraren", "Idjeur",
-    "Iferhounène", "Ifigha", "Iflissen", "Illilten", "Illoula Oumalou", "Mekla",
-    "Souama", "Ouacif", "Ouadhia", "Tizi N'Tleta", "Ouaguenoun", "Timizart",
-    "Tigzirt", "Mizrana", "Yakouren", "Yatafen", "Zekri",
+    "Iferhounène", "Ifigha", "Iflissen", "Illilten", "Illoula Oumalou",
+    "Larbaâ Nath Irathen", "Mâatkas", "Makouda", "Mechtras", "Mekla", "Mizrana",
+    "M'Kira", "Ouacif", "Ouadhia", "Ouaguenoun", "Sidi Nâamane", "Souama",
+    "Souk El Tenine", "Tadmaït", "Tigzirt", "Timizart", "Tirmitine",
+    "Tizi Ghenif", "Tizi N'Tleta", "Yakouren", "Yatafen", "Zekri",
 ]
 
 # (nom wilaya, code, communes) pour les wilayas au-delà d'Alger.
