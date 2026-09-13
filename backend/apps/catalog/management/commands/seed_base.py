@@ -85,12 +85,71 @@ TIZI_OUZOU_COMMUNES = [
     "Tizi Ghenif", "Tizi N'Tleta", "Yakouren", "Yatafen", "Zekri",
 ]
 
+# Wilaya d'Annaba (23) — 12 communes officielles (liste complète et vérifiée).
+ANNABA_COMMUNES = [
+    "Annaba", "Aïn Berda", "Berrahal", "Chetaïbi", "Cheurfa", "El Bouni",
+    "El Hadjar", "El Eulma (Annaba)", "Oued El Aneb", "Seraïdi", "Sidi Amar",
+    "Treat",
+]
+
+# Wilaya de Béjaïa (06) — 52 communes officielles (liste quasi-complète, ~53 récoltées).
+BEJAIA_COMMUNES = [
+    "Béjaïa", "Adekar", "Aït Mellikeche", "Aït Smaïl", "Akbou", "Akfadou",
+    "Amalou", "Amizour", "Aokas", "Barbacha", "Beni Djellil", "Beni Ksila",
+    "Beni Maouche", "Boudjellil", "Bouhamza", "Boukhelifa", "Chellata",
+    "Chemini", "Darguina", "Draâ El Kaïd", "El Kseur", "Fenaïa Ilmaten",
+    "Feraoun", "Ighil Ali", "Ighram", "Kendira", "Kherrata", "Leflaye",
+    "Letnayen", "M'cisna", "Melbou", "Mouzaïa", "Oued Ghir", "Ouzellaguen",
+    "Seddouk", "Semaoun", "Sidi Aïch", "Sidi Ayad", "Souk El Ténine",
+    "Souk Oufella", "Tala Hamza", "Tamokra", "Tamridjet", "Taourirt Ighil",
+    "Taskriout", "Tazmalt", "Tibane", "Tichy", "Tifra", "Timezrit",
+    "Tinebdar", "Tizi N'Berber", "Toudja",
+]
+
+# Wilaya de Sétif (19) — 60 communes officielles (liste quasi-complète, ~65 récoltées ;
+# à vérifier avant production en cas de doublons/variantes orthographiques).
+SETIF_COMMUNES = [
+    "Sétif", "Aïn Abessa", "Aïn Arnat", "Aïn Azel", "Aïn El Kebira",
+    "Aïn Lahdjar", "Aïn Legradj", "Aïn Oulmène", "Aïn Roua", "Aïn Sebt",
+    "Aït Naoual Mezada", "Aït Tizi", "Amoucha", "Babor", "Bazer Sakhra",
+    "Beidha Bordj", "Belaa", "Beni Aziz", "Beni Chebana", "Beni Fouda",
+    "Beni Hocine", "Beni Mouhli", "Beni Ourtilane", "Bir El Arch",
+    "Bir Haddada", "Bouandas", "Bouferoudj", "Bougaa", "Bousselam",
+    "Boutaleb", "Dehamcha", "Djemila", "Draa Kebila", "El Eulma",
+    "El Ouldja", "El Ouricia", "Guellal", "Guelta Zerka", "Guenzet",
+    "Guidjel", "Hamma", "Hammam Guergour", "Hammam Soukhna", "Harbil",
+    "Ksar El Abtal", "Maaouia", "Maoklane", "Mezloug", "Oued El Barad",
+    "Oued Sebt", "Ouled Addouane", "Ouled Ayad", "Ouled Sabor",
+    "Ouled Si Ahmed", "Ouled Tebben", "Oum Ladjoul", "Rosfa", "Salah Bey",
+    "Serdj El Ghoul", "Tachouda", "Talaifacene", "Taya", "Tella",
+    "Tizi N'Bechar",
+]
+
+# Wilaya de Batna (05) — 61 communes officielles (liste quasi-complète, ~62 récoltées).
+BATNA_COMMUNES = [
+    "Batna", "Abdelkader Azil", "Aïn Djasser", "Aïn Touta", "Aïn Yagout",
+    "Amentane", "Arris", "Ben Foudhala El Hakania", "Bitam", "Boulhilat",
+    "Boumagueur", "Boumia", "Bouzina", "Chemora", "Chir", "Djerma", "Djezar",
+    "El Hassi", "El Madher", "Fesdis", "Foum Toub", "Ghassira", "Gosbat",
+    "Guigba", "Hidoussa", "Ichmoul", "Inoughissen", "Kimmel", "Ksar Bellezma",
+    "Larbaâ", "Lazrou", "Lemsane", "M'doukal", "Maafa", "Menaa", "Merouana",
+    "N'Gaous", "Nara", "Oued Chaaba", "Oued El Ma", "Oued Taga", "Ouled Ammar",
+    "Ouled Aouf", "Ouled Fadel", "Ouled Sellam", "Ouled Si Slimane",
+    "Ouyoun El Assafir", "Rahbat", "Ras El Aioun", "Sefiane", "Seggana",
+    "Seriana", "T'Kout", "Talkhamt", "Taxlent", "Tazoult", "Teniet El Abed",
+    "Tighanimine", "Tigherghar", "Timgad", "Zana El Beida",
+]
+
 # (nom wilaya, code, communes) pour les wilayas au-delà d'Alger.
 EXTRA_WILAYAS = [
     ("31", "Oran", "وهران", ORAN_COMMUNES),
     ("25", "Constantine", "قسنطينة", CONSTANTINE_COMMUNES),
     ("09", "Blida", "البليدة", BLIDA_COMMUNES),
     ("15", "Tizi Ouzou", "تيزي وزو", TIZI_OUZOU_COMMUNES),
+    ("19", "Sétif", "سطيف", SETIF_COMMUNES),
+    ("05", "Batna", "باتنة", BATNA_COMMUNES),
+    ("23", "Annaba", "عنابة", ANNABA_COMMUNES),
+    ("06", "Béjaïa", "بجاية", BEJAIA_COMMUNES),
 ]
 
 
