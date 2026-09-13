@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(git clone --depth 1 -b stable https://github.com/flutter/flutter.git C:\\\\src\\\\flutter 2>&1)"
+    ]
+  }
+}

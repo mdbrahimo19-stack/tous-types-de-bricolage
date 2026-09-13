@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTB · Testeur Firebase Phone Auth (+213)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { font-size: 1.25rem; }
+  fieldset { border: 1px solid #ccc; border-radius: 8px; margin: 1rem 0; }
+  label { display: block; margin: .5rem 0 .2rem; font-weight: 600; font-size: .9rem; }
+  input { width: 100%; padding: .5rem; font-size: 1rem; box-sizing: border-box; }
+  button { margin-top: .8rem; padding: .6rem 1rem; font-size: 1rem; cursor: pointer; }
+  #log { background: #111; color: #0f0; font-family: monospace; font-size: .8rem; padding: 1rem;
+         border-radius: 8px; white-space: pre-wrap; word-break: break-word; min-height: 8rem; }
+  .warn { background: #fff3cd; border: 1px solid #ffe08a; padding: .8rem; border-radius: 8px; font-size: .9rem; }
+</style>
+</head>
+<body>
+<h1>Testeur Firebase Phone Auth — numéros +213</h1>
+
+<p class="warn">
+  Ce test <b>web</b> dit si Firebase envoie un SMS OTP vers un numéro algérien et en combien de temps.
+  C'est un premier signal. Le test qui compte vraiment se fait ensuite depuis une <b>app Android</b>
+  avec une SIM DZ (voir <code>docs/firebase-phone-auth-test.md</code>).
+</p>
+
+<fieldset>
+  <legend>1. Configuration Firebase</legend>
+  <p style="font-size:.85rem">
+    Console Firebase → ⚙️ Paramètres du projet → Tes applications → Web → « Configuration SDK ».
+    Colle ici le contenu de l'objet <code>firebaseConfig</code> (JSON).
+  </p>
+  <label for="cfg">firebaseConfig (JSON)</label>
+  <textarea id="cfg" rows="8" style="width:100%;font-family:monospace;font-size:.8rem"
+    placeholder='{
+  "apiKey": "AIza...",
+  "authDomain": "ttb-dev.firebaseapp.com",
+  "projectId": "ttb-dev",
+  "appId": "1:...:web:..."
+}'></textarea>
+  <button id="init">Initialiser</button>
+</fieldset>
+
+<fieldset>
+  <legend>2. Envoyer un OTP</legend>
+  <label for="phone">Numéro (format international, ex. +213661234567)</label>
+  <input id="phone" type="tel" placeholder="+213661234567" autocomplete="off">
+  <div id="recaptcha-container" style="margin-top:.8rem"></div>
+  <button id="send" disabled>Envoyer le SMS</button>
+  <p id="sentAt" style="font-size:.85rem;color:#555"></p>
+</fieldset>
+
+<fieldset>
+  <legend>3. Vérifier le code reçu</legend>
+  <label for="code">Code à 6 chiffres</label>
+  <input id="code" inputmode="numeric" maxlength="6" placeholder="123456">
+  <button id="verify" disabled>Vérifier</button>
+</fieldset>
+
+<h3>Journal</h3>
+<div id="log">En attente…</div>
+
+<!-- SDK compat : fonctionne aussi bien via un petit serveur local -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const logEl = $("log");
+  let sentTs = 0;
+  const log = (msg) => {
+    logEl.textContent += "\n" + new Date().toLocaleTimeString() + "  " + msg;
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+
+  let confirmationResult = null;
+
+  $("init").onclick = () => {
+    try {
+      const cfg = JSON.parse($("cfg").value);
+      if (firebase.apps.length) firebase.app().delete();
+      firebase.initializeApp(cfg);
+      firebase.auth().useDeviceLanguage();
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+        size: "normal",
+        callback: () => log("reCAPTCHA validé."),
+        "expired-callback": () => log("reCAPTCHA expiré, recommence."),
+      });
+      window.recaptchaVerifier.render();
+      $("send").disabled = false;
+      log("Firebase initialisé (projet: " + (cfg.projectId || "?") + "). Résous le reCAPTCHA puis envoie.");
+    } catch (e) {
+      log("ERREUR config : " + e.message);
+    }
+  };
+
+  $("send").onclick = async () => {
+    const phone = $("phone").value.trim();
+    if (!/^\+\d{8,15}$/.test(phone)) { log("Numéro invalide. Format attendu : +213661234567"); return; }
+    $("send").disabled = true;
+    log("Envoi de l'OTP à " + phone + " …");
+    try {
+      confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
+      sentTs = Date.now();
+      $("sentAt").textContent = "SMS demandé à " + new Date(sentTs).toLocaleTimeString() + ". Chronomètre la réception.";
+      $("verify").disabled = false;
+      log("OK côté Firebase : SMS en route. >>> Note l'heure exacte de réception sur le téléphone. <<<");
+    } catch (e) {
+      log("ÉCHEC envoi : " + e.code + " — " + e.message);
+      $("send").disabled = false;
+      // Erreurs fréquentes :
+      // auth/invalid-phone-number, auth/quota-exceeded, auth/too-many-requests,
+      // auth/captcha-check-failed, auth/operation-not-allowed (Phone non activé),
+      // auth/unauthorized-domain (ajoute localhost dans Authentication > Settings > Authorized domains)
+    }
+  };
+
+  $("verify").onclick = async () => {
+    if (!confirmationResult) { log("Envoie d'abord un code."); return; }
+    try {
+      const cred = await confirmationResult.confirm($("code").value.trim());
+      const delay = sentTs ? Math.round((Date.now() - sentTs) / 1000) : "?";
+      const token = await cred.user.getIdToken();
+      log("✅ CONNEXION RÉUSSIE. uid=" + cred.user.uid);
+      log("Délai approximatif envoi→validation : ~" + delay + " s (inclut ta saisie).");
+      log("ID TOKEN (à vérifier côté backend) :\n" + token);
+    } catch (e) {
+      log("Code refusé : " + e.code + " — " + e.message);
+    }
+  };
+</script>
+</body>
+</html>
