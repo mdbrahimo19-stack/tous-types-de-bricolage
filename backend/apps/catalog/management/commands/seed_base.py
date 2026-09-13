@@ -21,6 +21,10 @@ CATEGORIES = [
     ("Nettoyage", "تنظيف", "spray", "forfait", 2000, 12000),
     ("Jardinage", "بستنة", "plant", "forfait", 2000, 10000),
     ("Déménagement", "نقل الأثاث", "truck", "forfait", 5000, 30000),
+    ("Mécanicien auto", "ميكانيكي سيارات", "car-wrench", "forfait", 2000, 15000),
+    ("Électricien auto", "كهربائي سيارات", "car-battery", "forfait", 1500, 10000),
+    ("Maintenance informatique", "صيانة معلوماتية", "computer", "forfait", 1000, 8000),
+    ("Réparateur TV", "تصليح تلفزيون", "tv", "forfait", 1500, 6000),
 ]
 
 # Sous-ensemble de communes d'Alger (wilaya 16) pour amorcer la bêta.
