@@ -140,6 +140,54 @@ BATNA_COMMUNES = [
     "Tighanimine", "Tigherghar", "Timgad", "Zana El Beida",
 ]
 
+# Wilaya d'Oum El Bouaghi (04) — 29 communes officielles (liste complète).
+OUM_EL_BOUAGHI_COMMUNES = [
+    "Oum El Bouaghi", "Aïn Babouche", "Aïn Beïda", "Aïn Diss", "Aïn Fakroun",
+    "Aïn Kercha", "Aïn M'lila", "Aïn Zitoun", "Behir Chergui", "Berriche",
+    "Bir Chouhada", "Dhalâa", "El Amiria", "El Belala", "El Djazia",
+    "El Fedjoudj Boughrara Saoudi", "El Harmilia", "Fkirina", "Hanchir Toumghani",
+    "Ksar Sbahi", "Meskiana", "Oued Nini", "Ouled Gacem", "Ouled Hamla",
+    "Ouled Zouaï", "Rahia", "Sigus", "Souk Naamane", "Zorg",
+]
+
+# Wilaya de Skikda (21) — 38 communes officielles (liste complète et vérifiée).
+SKIKDA_COMMUNES = [
+    "Skikda", "Aïn Bouziane", "Aïn Charchar", "Aïn Kechra", "Aïn Zouit",
+    "Azzaba", "Bekkouche Lakhdar", "Bin El Ouiden", "Ben Azzouz", "Beni Bechir",
+    "Beni Oulbane", "Beni Zid", "Bouchtata", "Cheraïa", "Collo",
+    "Djendel Saadi Mohamed", "El Ghedir", "El Hadaiek", "El Harrouch",
+    "El Marsa", "Emdjez Edchich", "Es Sebt", "Filfila", "Hamadi Krouma",
+    "Kanoua", "Kerkera", "Kheneg Mayoum", "Oued Zehour", "Ouldja Boulballout",
+    "Ouled Attia", "Ouled Hbaba", "Oum Toub", "Ramdane Djamel",
+    "Salah Bouchaour", "Sidi Mezghiche", "Tamalous", "Zerdaza", "Zitouna",
+]
+
+# Wilaya de Tlemcen (13) — 53 communes officielles (liste complète).
+TLEMCEN_COMMUNES = [
+    "Tlemcen", "Aïn Fetah", "Aïn Fezza", "Aïn Ghoraba", "Aïn Kebira",
+    "Aïn Nehala", "Aïn Tallout", "Aïn Youcef", "Akid Abbes", "Amieur",
+    "Azaïls", "Bab El Assa", "Beni Bahdel", "Beni Boussaïd", "Beni Khellad",
+    "Beni Mester", "Beni Ouarsous", "Beni Semiel", "Beni Snous", "Bensekrane",
+    "Bouhlou", "Chetouane", "Dar Yaghmouracene", "Djebala", "El Aricha",
+    "El Bouihi", "El Fehoul", "El Gor", "Fellaoucene", "Ghazaouet",
+    "Hammam Boughrara", "Hennaya", "Honaïne", "Maghnia", "Mansourah",
+    "Marsa Ben M'Hidi", "MSirda Fouaga", "Nedroma", "Oued Lakhdar",
+    "Ouled Mimoun", "Ouled Riyah", "Remchi", "Sabra", "Sebaa Chioukh",
+    "Sebdou", "Sidi Abdelli", "Sidi Djillali", "Sidi Medjahed", "Souahlia",
+    "Souani", "Souk Tlata", "Terny Beni Hdiel", "Tienet",
+]
+
+# Wilaya de Mostaganem (27) — 32 communes officielles (liste complète et vérifiée).
+MOSTAGANEM_COMMUNES = [
+    "Mostaganem", "Abdelmalek Ramdane", "Achaacha", "Aïn Boudinar",
+    "Aïn Sidi Cherif", "Aïn Tedles", "Aïn Nouïssy", "Bouguirat", "El Hassiane",
+    "Fornaka", "Hadjadj", "Hassi Mameche", "Khadra", "Kheireddine",
+    "Mansourah", "Mazagran", "Mesra", "Nekmaria", "Oued El Kheir",
+    "Ouled Boughalem", "Ouled Maallah", "Safsaf", "Sayada", "Sidi Ali",
+    "Sidi Belattar", "Sidi Lakhdar", "Sirat", "Souaflia", "Sour", "Stidia",
+    "Tazgait", "Touahria",
+]
+
 # (nom wilaya, code, communes) pour les wilayas au-delà d'Alger.
 EXTRA_WILAYAS = [
     ("31", "Oran", "وهران", ORAN_COMMUNES),
@@ -150,6 +198,10 @@ EXTRA_WILAYAS = [
     ("05", "Batna", "باتنة", BATNA_COMMUNES),
     ("23", "Annaba", "عنابة", ANNABA_COMMUNES),
     ("06", "Béjaïa", "بجاية", BEJAIA_COMMUNES),
+    ("04", "Oum El Bouaghi", "أم البواقي", OUM_EL_BOUAGHI_COMMUNES),
+    ("21", "Skikda", "سكيكدة", SKIKDA_COMMUNES),
+    ("13", "Tlemcen", "تلمسان", TLEMCEN_COMMUNES),
+    ("27", "Mostaganem", "مستغانم", MOSTAGANEM_COMMUNES),
 ]
 
 
