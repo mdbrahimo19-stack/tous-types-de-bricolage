@@ -1,7 +1,12 @@
-"""Données de départ pour le MVP : 10 catégories + wilaya d'Alger et ses communes.
+"""Données de départ pour le MVP : 14 catégories + wilayas (Alger, Oran, Constantine,
+Blida, Tizi Ouzou) et leurs communes.
 
 Idempotent : peut être relancé sans créer de doublons.
     python manage.py seed_base
+
+NB : la liste des communes de Tizi Ouzou (67 au total) n'est pas garantie exhaustive
+à 100 % ici — à vérifier auprès de la source officielle (wilaya) avant la mise en
+production.
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -39,6 +44,53 @@ ALGER_COMMUNES = [
     ("Rouiba", "الرويبة"), ("Baraki", "براقي"),
 ]
 
+# Wilaya d'Oran (31) — 26 communes officielles.
+ORAN_COMMUNES = [
+    "Oran", "Aïn El Bia", "Aïn El Kerma", "Aïn El Turk", "Arzew", "Ben Freha",
+    "Bir El Djir", "Boufatis", "Bousfer", "Boutlélis", "El Ançor", "El Braya",
+    "El Kerma", "Es Senia", "Gdyel", "Hassi Ben Okba", "Hassi Bounif",
+    "Hassi Mefsoukh", "Hassiane Ettoual", "Mers El Hadjadj", "Mers El Kébir",
+    "Misserghin", "Oued Tlelat", "Sidi Benyebka", "Sidi Chami", "Tafraoui",
+]
+
+# Wilaya de Constantine (25) — 12 communes officielles.
+CONSTANTINE_COMMUNES = [
+    "Constantine", "Aïn Abid", "Aïn Smara", "Beni Hamiden", "Didouche Mourad",
+    "El Khroub", "Hamma Bouziane", "Ibn Badis", "Ibn Ziad", "Messaoud Boudjriou",
+    "Ouled Rahmoune", "Zighoud Youcef",
+]
+
+# Wilaya de Blida (09) — 25 communes officielles.
+BLIDA_COMMUNES = [
+    "Blida", "Chebli", "Bouinan", "Oued Alleug", "Ouled Yaïch", "Chréa",
+    "El Affroun", "Chiffa", "Hammam Melouane", "Benkhelil", "Soumaa", "Mouzaia",
+    "Souhane", "Meftah", "Ouled Slama", "Boufarik", "Larbaâ", "Oued Djer",
+    "Beni Tamou", "Bouarfa", "Beni Mered", "Bougara", "Guerouaou", "Aïn Romana",
+    "Djebabra",
+]
+
+# Wilaya de Tizi Ouzou (15) — 55/67 communes vérifiées (voir note en tête de fichier).
+TIZI_OUZOU_COMMUNES = [
+    "Tizi Ouzou", "Tizi Rached", "Abi Youcef", "Aghribs", "Agouni Gueghrane",
+    "Aïn El Hammam", "Aïn Zaouia", "Aït Aïcha", "Aït Aïssa Mimoun", "Aït Aïssi",
+    "Aït Aggouacha", "Aït Bouaddou", "Aït Boumahdi", "Aït Chafâa", "Aït Khellili",
+    "Aït Mahmoud", "Aït Oumalou", "Aït Toudert", "Aït Yahia", "Aït Yahia Moussa",
+    "Akbil", "Akerrou", "Assi Youcef", "Azazga", "Azeffoun", "Beni Douala",
+    "Beni Yenni", "Beni Zmenzer", "Boghni", "Boudjima", "Bounouh", "Bouzeguène",
+    "Draâ Ben Khedda", "Draâ El Mizan", "Freha", "Frikat", "Iboudraren", "Idjeur",
+    "Iferhounène", "Ifigha", "Iflissen", "Illilten", "Illoula Oumalou", "Mekla",
+    "Souama", "Ouacif", "Ouadhia", "Tizi N'Tleta", "Ouaguenoun", "Timizart",
+    "Tigzirt", "Mizrana", "Yakouren", "Yatafen", "Zekri",
+]
+
+# (nom wilaya, code, communes) pour les wilayas au-delà d'Alger.
+EXTRA_WILAYAS = [
+    ("31", "Oran", "وهران", ORAN_COMMUNES),
+    ("25", "Constantine", "قسنطينة", CONSTANTINE_COMMUNES),
+    ("09", "Blida", "البليدة", BLIDA_COMMUNES),
+    ("15", "Tizi Ouzou", "تيزي وزو", TIZI_OUZOU_COMMUNES),
+]
+
 
 class Command(BaseCommand):
     help = "Crée les 10 catégories MVP et la wilaya d'Alger avec ses communes."
@@ -67,9 +119,21 @@ class Command(BaseCommand):
             )
             created_communes += int(created)
 
+        summary_parts = [f"communes Alger: +{created_communes} (total {wilaya.communes.count()})"]
+
+        for code, name_fr, name_ar, communes in EXTRA_WILAYAS:
+            w, _ = Wilaya.objects.update_or_create(
+                code=code, defaults={"name_fr": name_fr, "name_ar": name_ar, "is_active": True}
+            )
+            created_w = 0
+            for fr in communes:
+                _, created = Commune.objects.get_or_create(wilaya=w, name_fr=fr)
+                created_w += int(created)
+            summary_parts.append(f"communes {name_fr}: +{created_w} (total {w.communes.count()})")
+
         self.stdout.write(self.style.SUCCESS(
             f"OK · catégories: +{created_cats} (total {Category.objects.count()}) · "
-            f"communes Alger: +{created_communes} (total {wilaya.communes.count()})"
+            + " · ".join(summary_parts)
         ))
 
     @staticmethod
