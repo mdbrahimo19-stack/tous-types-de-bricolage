@@ -21,6 +21,8 @@ SECRET_KEY = os.getenv(
 )
 DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+if DEBUG:
+    ALLOWED_HOSTS.append("10.0.2.2")  # émulateur Android (app mobile en dev)
 
 # --- Applications ----------------------------------------------------------
 INSTALLED_APPS = [
