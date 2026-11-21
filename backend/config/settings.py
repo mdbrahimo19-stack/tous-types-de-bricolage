@@ -1,6 +1,7 @@
 """Configuration Django - projet TTB (backend MVP)."""
 from datetime import timedelta
 from pathlib import Path
+import json
 import os
 import sys
 
@@ -146,7 +147,19 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
 
 # --- OTP / SMS -----------------------------------------------------
-SMS_BACKEND = os.getenv("SMS_BACKEND", "console")  # console | firebase | aggregator
+SMS_BACKEND = os.getenv("SMS_BACKEND", "console")  # console | http (fournisseur SMS) | firebase
+# Réglages du backend `http` (voir apps/accounts/sms.py et docs/sms-aggregator-brief.md)
+SMS_API_URL = os.getenv("SMS_API_URL", "")
+SMS_API_KEY = os.getenv("SMS_API_KEY", "")
+SMS_AUTH_HEADER = os.getenv("SMS_AUTH_HEADER", "Authorization")
+SMS_AUTH_SCHEME = os.getenv("SMS_AUTH_SCHEME", "Bearer")
+SMS_SENDER_ID = os.getenv("SMS_SENDER_ID", "")
+SMS_PHONE_FORMAT = os.getenv("SMS_PHONE_FORMAT", "e164")  # e164 (+213…) | intl (213…) | local (0…)
+SMS_FIELD_TO = os.getenv("SMS_FIELD_TO", "to")
+SMS_FIELD_TEXT = os.getenv("SMS_FIELD_TEXT", "text")
+SMS_FIELD_SENDER = os.getenv("SMS_FIELD_SENDER", "sender")
+SMS_EXTRA_JSON = json.loads(os.getenv("SMS_EXTRA_JSON") or "{}")
+SMS_TIMEOUT_SECONDS = int(os.getenv("SMS_TIMEOUT_SECONDS", "10"))
 PUSH_BACKEND = os.getenv("PUSH_BACKEND", "console")  # console | fcm
 OTP_TTL_SECONDS = int(os.getenv("OTP_TTL_SECONDS", "300"))
 OTP_LENGTH = 6

@@ -92,25 +92,48 @@ Retenir le fournisseur avec le **meilleur taux de réception réel**, pas le moi
 > Merci d'avance.
 > [Nom] — [téléphone] — [email]
 
-## 6. Côté code : ce qui reste à faire une fois le fournisseur choisi
+## 6. Côté code : ✅ prêt — il suffit de remplir le `.env`
 
-Dans `backend/apps/accounts/sms.py`, ajouter un backend `aggregator` :
+Le backend `http` est codé (`backend/apps/accounts/sms.py`) : un POST JSON vers l'API
+du fournisseur, avec une nouvelle tentative si le fournisseur est injoignable ou en
+erreur 5xx. Si le SMS ne part pas, le code est annulé et l'app affiche
+« Envoi du SMS impossible pour le moment » (HTTP 503) au lieu de « code envoyé ».
 
-```python
-if backend == "aggregator":
-    import requests
-    resp = requests.post(
-        settings.SMS_API_URL,
-        headers={"Authorization": f"Bearer {settings.SMS_API_KEY}"},
-        json={"to": phone, "text": message, "sender": settings.SMS_SENDER_ID},
-        timeout=10,
-    )
-    resp.raise_for_status()
-    return True
+Une fois le fournisseur choisi, recopier **ses** valeurs dans `backend/.env` :
+
+```ini
+SMS_BACKEND=http
+SMS_API_URL=https://…            # adresse d'envoi donnée par le fournisseur
+SMS_API_KEY=…                     # clé API (ne jamais la mettre sur GitHub)
+SMS_AUTH_HEADER=Authorization     # ou X-API-Key, selon sa doc
+SMS_AUTH_SCHEME=Bearer            # vide si la clé est envoyée seule
+SMS_SENDER_ID=TTB                 # expéditeur enregistré chez lui (ou vide)
+SMS_PHONE_FORMAT=e164             # +213… | intl = 213… | local = 0…
+SMS_FIELD_TO=to                   # noms des champs de SA doc (ex. phone, msisdn, recipient)
+SMS_FIELD_TEXT=text               # (ex. message, content, body)
+SMS_FIELD_SENDER=sender           # (ex. from, sender_id)
+SMS_EXTRA_JSON={}                 # champs fixes en plus, ex. {"type": "otp"}
 ```
 
-+ 3 variables d'env (`SMS_API_URL`, `SMS_API_KEY`, `SMS_SENDER_ID`), + passer l'envoi
-en tâche de fond (retry) quand Celery sera en place. **~30 lignes, 1 h de travail.**
+Puis relancer le serveur et tester avec son propre numéro. En production
+(`DJANGO_DEBUG=False`), le code n'est plus renvoyé dans la réponse de l'API :
+il n'arrive **que** par SMS.
 
-Aucun autre changement : le flow OTP (`otp.py`), les endpoints et l'app mobile sont
-déjà indépendants du fournisseur.
+**Si l'API du fournisseur n'est pas du JSON** (formulaire, paramètres dans l'URL, XML),
+il faudra adapter `_send_http` : ~15 lignes.
+
+### Option bêta : passerelle SMS sur un téléphone Android
+
+Pour une bêta à faible volume, en attendant le contrat avec un fournisseur :
+un téléphone Android dédié, avec une puce Mobilis / Djezzy / Ooredoo et une
+application de « passerelle SMS » qui expose une API HTTP. Le backend `http`
+lui envoie les codes, et c'est le téléphone qui envoie les SMS depuis sa puce.
+
+- ✅ Coût = forfait SMS de la puce, mise en place en une heure.
+- ⚠️ Limites : volume limité par l'opérateur (risque de blocage si trop de SMS),
+  téléphone à garder allumé et connecté, expéditeur = un numéro ordinaire.
+  Vérifier les conditions de l'opérateur avant usage commercial.
+- À remplacer par un vrai fournisseur A2P avant le lancement public.
+
+Reste à faire plus tard : passer l'envoi en tâche de fond quand Celery sera en place,
+et brancher les accusés de livraison (DLR) si le fournisseur en propose.

@@ -1,4 +1,4 @@
-"""Données de départ pour le MVP : 14 catégories + wilayas (Alger, Oran, Constantine,
+"""Données de départ : 44 catégories + wilayas (Alger, Oran, Constantine,
 Blida, Tizi Ouzou) et leurs communes.
 
 Idempotent : peut être relancé sans créer de doublons.
@@ -30,6 +30,43 @@ CATEGORIES = [
     ("Électricien auto", "كهربائي سيارات", "car-battery", "forfait", 1500, 10000),
     ("Maintenance informatique", "صيانة معلوماتية", "computer", "forfait", 1000, 8000),
     ("Réparateur TV", "تصليح تلفزيون", "tv", "forfait", 1500, 6000),
+    # --- catalogue élargi (prix indicatifs à compléter dans l'admin) ---------------
+    # bâtiment et second œuvre
+    ("Carrelage", "تبليط", "tiles", "m2", None, None),
+    ("Plâtrerie et faux plafond", "جبس وأسقف مستعارة", "ceiling", "m2", None, None),
+    ("Étanchéité", "عزل مائي", "roof", "m2", None, None),
+    ("Pose de parquet", "تركيب الباركي", "floor", "m2", None, None),
+    ("Vitrerie", "زجاج", "window", "forfait", None, None),
+    ("Serrurerie", "أقفال", "key", "forfait", None, None),
+    ("Ferronnerie et soudure", "حدادة ولحام", "welding", "forfait", None, None),
+    ("Aluminium et PVC", "ألمنيوم وبي في سي", "door", "forfait", None, None),
+    ("Chauffage et chaudière", "تدفئة وسخانات", "heater", "forfait", None, None),
+    ("Débouchage de canalisations", "تسليك المجاري", "drain", "forfait", None, None),
+    ("Lavage de citernes", "تنظيف الخزانات", "water-tank", "forfait", None, None),
+    ("Décoration intérieure", "ديكور داخلي", "sofa", "forfait", None, None),
+    ("Montage de meubles", "تركيب الأثاث", "cabinet", "forfait", None, None),
+    ("Tapisserie et rideaux", "تنجيد وستائر", "curtains", "forfait", None, None),
+    ("Entretien de piscine", "صيانة المسابح", "pool", "forfait", None, None),
+    # sécurité, électronique
+    ("Caméras de surveillance", "كاميرات المراقبة", "cctv", "forfait", None, None),
+    ("Antenne et parabole", "هوائيات وصحون مقعرة", "satellite", "forfait", None, None),
+    ("Réparation de téléphones", "تصليح الهواتف", "phone", "forfait", None, None),
+    # nettoyage, hygiène
+    ("Désinsectisation et dératisation", "مكافحة الحشرات والقوارض", "bug", "forfait", None, None),
+    ("Nettoyage de canapés et tapis", "تنظيف الأرائك والزرابي", "carpet", "forfait", None, None),
+    # services à la personne
+    ("Garde d'enfants", "رعاية الأطفال", "baby", "heure", None, None),
+    ("Aide à domicile", "مساعدة منزلية", "home-heart", "heure", None, None),
+    ("Cours particuliers", "دروس خصوصية", "school", "heure", None, None),
+    ("Coiffure à domicile", "حلاقة وتجميل في المنزل", "scissors", "forfait", None, None),
+    # événements
+    ("Cuisinier et traiteur", "طباخ وممون حفلات", "chef", "forfait", None, None),
+    ("Photographe", "مصور", "camera", "forfait", None, None),
+    # transport, automobile
+    ("Transport de marchandises", "نقل البضائع", "van", "forfait", None, None),
+    ("Carrosserie auto", "هيكلة السيارات", "car-door", "forfait", None, None),
+    ("Lavage auto à domicile", "غسل السيارات في المنزل", "car-wash", "forfait", None, None),
+    ("Dépannage et remorquage", "سحب وإسعاف السيارات", "tow-truck", "forfait", None, None),
 ]
 
 # Sous-ensemble de communes d'Alger (wilaya 16) pour amorcer la bêta.
@@ -206,7 +243,7 @@ EXTRA_WILAYAS = [
 
 
 class Command(BaseCommand):
-    help = "Crée les 10 catégories MVP et la wilaya d'Alger avec ses communes."
+    help = "Crée ou met à jour les catégories et les wilayas avec leurs communes."
 
     @transaction.atomic
     def handle(self, *args, **options):

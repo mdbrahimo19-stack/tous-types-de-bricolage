@@ -34,7 +34,7 @@ python manage.py runserver
 | `DJANGO_DEBUG` | `True` en dev, `False` en prod |
 | `DJANGO_ALLOWED_HOSTS` | domaines autorisés, séparés par virgule |
 | `DATABASE_URL` | vide → SQLite ; `postgres://user:pass@host:5432/db` en prod |
-| `SMS_BACKEND` | `console` (dev, code affiché dans les logs) / `firebase` (à venir) |
+| `SMS_BACKEND` | `console` (dev, code affiché dans les logs) / `http` (fournisseur SMS, réglages `SMS_*` : voir `.env.example` et `docs/sms-aggregator-brief.md`) |
 | `OTP_TTL_SECONDS` | durée de validité d'un code OTP (défaut 300) |
 | `ANTHROPIC_API_KEY` | clé API Claude ; vide → fonctions IA désactivées |
 | `AI_MODEL` | modèle Claude (défaut `claude-opus-5-5`) |
