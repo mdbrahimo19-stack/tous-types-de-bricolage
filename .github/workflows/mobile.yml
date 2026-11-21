@@ -44,9 +44,29 @@ jobs:
       - name: Tests
         run: flutter test
 
-      # APK optimisé pour les téléphones récents (arm64), signé avec la clé de test.
+      # Clé de signature fixe (secrets GitHub) : chaque APK s'installe par-dessus le précédent.
+      - name: Clé de signature
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KS_B64" ]; then
+            echo "::warning::Secrets de signature absents : APK signé avec une clé de test."
+            exit 0
+          fi
+          echo "$KS_B64" | base64 -d > android/app/upload.jks
+          printf 'storeFile=upload.jks\nstorePassword=%s\nkeyPassword=%s\nkeyAlias=%s\n' \
+            "$KS_PASS" "$KEY_PASS" "$KEY_ALIAS" > android/key.properties
+
+      # APK optimisé pour les téléphones récents (arm64).
       - name: Build APK
         run: flutter build apk --release --target-platform android-arm64
+
+      # Empreinte du certificat : doit être identique d'une compilation à l'autre.
+      - name: Empreinte de signature
+        run: keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk | grep -E 'SHA256|Owner'
 
       - uses: actions/upload-artifact@v4
         with:
