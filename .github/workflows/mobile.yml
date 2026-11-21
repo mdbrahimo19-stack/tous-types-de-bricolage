@@ -1,0 +1,75 @@
+name: App mobile (Flutter)
+
+on:
+  push:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Version de Flutter
+        run: flutter --version
+
+      # Le dossier android/ est généré s'il n'est pas encore dans le dépôt.
+      - name: Générer le projet Android
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --org dz.ttb --project-name ttb .
+            python3 ../tools/ci/patch_android.py android
+          fi
+
+      - run: flutter pub get
+
+      - name: Analyse du code
+        run: flutter analyze --no-fatal-infos
+
+      - name: Tests
+        run: flutter test
+
+      # APK optimisé pour les téléphones récents (arm64), signé avec la clé de test.
+      - name: Build APK
+        run: flutter build apk --release --target-platform android-arm64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ttb-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+      # APK téléchargeable directement depuis le téléphone (onglet Releases).
+      - name: Publier l'APK dans la release « apk-test »
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk bricolages-test.apk
+          NOTES="APK de test — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
+          gh release delete apk-test --yes --cleanup-tag 2>/dev/null || true
+          gh release create apk-test bricolages-test.apk \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "APK de test (dernière compilation)" --notes "$NOTES"
