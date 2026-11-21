@@ -9,6 +9,7 @@ import '../config.dart';
 import '../l10n.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
+import 'directory.dart';
 import 'shared.dart';
 
 const _urgencies = ['immediate', 'today', 'this_week', 'flexible'];
@@ -94,6 +95,20 @@ class ClientHomeScreen extends StatelessWidget {
                     child: Text(context.tr('classic_form')),
                   ),
                 ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                leading: CircleAvatar(
+                  backgroundColor: scheme.secondaryContainer,
+                  child: Icon(Icons.person_search, color: scheme.onSecondaryContainer),
+                ),
+                title: Text(context.tr('dir_title'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(context.tr('dir_home_sub')),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DirectoryScreen())),
               ),
             ),
             SectionTitle(context.tr('categories')),
