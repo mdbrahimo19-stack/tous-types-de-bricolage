@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'api/api_client.dart';
+import 'config.dart';
 import 'screens/auth.dart';
 import 'screens/shell.dart';
 import 'state/session.dart';
@@ -12,6 +13,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr');
   await initializeDateFormatting('ar');
+  await ServerConfig.load();
   final session = Session(ApiClient());
   await session.init();
   runApp(ChangeNotifierProvider.value(value: session, child: const TtbApp()));

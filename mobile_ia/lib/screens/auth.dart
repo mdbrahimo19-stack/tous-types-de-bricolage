@@ -51,6 +51,11 @@ class _PhoneScreenState extends State<PhoneScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(actions: [
+        IconButton(
+          tooltip: context.tr('server'),
+          icon: const Icon(Icons.dns_outlined),
+          onPressed: () => showServerDialog(context),
+        ),
         TextButton(
           onPressed: () => session.setLocale(session.locale == 'ar' ? 'fr' : 'ar'),
           child: Text(session.locale == 'ar' ? 'Français' : 'العربية'),

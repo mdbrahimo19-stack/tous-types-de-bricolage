@@ -122,17 +122,17 @@ class ApiClient {
   }) async {
     final uri = absoluteUrl != null
         ? Uri.parse(absoluteUrl)
-        : Uri.parse('$apiBaseUrl$path').replace(queryParameters: query);
+        : Uri.parse('${ServerConfig.baseUrl}$path').replace(queryParameters: query);
 
     http.Response resp;
     try {
       resp = await _rawSend(method, uri, body: body, multipart: multipart).timeout(_timeout);
     } on SocketException {
-      throw ApiException('Serveur injoignable. Vérifiez votre connexion.');
+      throw ApiException(_unreachable);
     } on TimeoutException {
       throw ApiException('Le serveur met trop de temps à répondre.');
     } on http.ClientException {
-      throw ApiException('Serveur injoignable. Vérifiez votre connexion.');
+      throw ApiException(_unreachable);
     }
 
     if (resp.statusCode == 401 && !retried && _refresh != null && !_isAuthPath(uri)) {
@@ -174,6 +174,21 @@ class ApiClient {
     return http.Response.fromStream(await _http.send(req));
   }
 
+  static String get _unreachable =>
+      'Serveur injoignable (${ServerConfig.baseUrl}). Vérifiez le Wi-Fi ou l\'adresse du serveur.';
+
+  /// Vérifie qu'un serveur TTB répond à cette adresse (`/api/health/`).
+  Future<bool> ping(String baseUrl) async {
+    try {
+      final resp = await _http
+          .get(Uri.parse('$baseUrl/api/health/'), headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 6));
+      return resp.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   bool _isAuthPath(Uri uri) => uri.path.contains('/api/auth/token/refresh/');
 
   /// Un seul rafraîchissement à la fois, même si plusieurs requêtes reçoivent 401.
@@ -181,7 +196,7 @@ class ApiClient {
     return _refreshing ??= () async {
       try {
         final resp = await _http.post(
-          Uri.parse('$apiBaseUrl/api/auth/token/refresh/'),
+          Uri.parse('${ServerConfig.baseUrl}/api/auth/token/refresh/'),
           headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
           body: jsonEncode({'refresh': _refresh}),
         );

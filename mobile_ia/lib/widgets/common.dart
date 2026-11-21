@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_client.dart';
+import '../config.dart';
 import '../l10n.dart';
 import '../state/session.dart';
 
@@ -213,6 +214,82 @@ class UrgencyChip extends StatelessWidget {
       const SizedBox(width: 4),
       Text(context.tr('urg_$urgency'), style: TextStyle(color: urgent ? Colors.red : null, fontSize: 13)),
     ]);
+  }
+}
+
+// ==========================================================================
+//  Réglage de l'adresse du serveur (accessible avant et après connexion)
+// ==========================================================================
+Future<void> showServerDialog(BuildContext context) {
+  return showDialog<void>(context: context, builder: (_) => const _ServerDialog());
+}
+
+class _ServerDialog extends StatefulWidget {
+  const _ServerDialog();
+
+  @override
+  State<_ServerDialog> createState() => _ServerDialogState();
+}
+
+class _ServerDialogState extends State<_ServerDialog> {
+  late final _url = TextEditingController(text: ServerConfig.baseUrl);
+  bool _testing = false;
+  bool? _reachable;
+
+  Future<void> _test() async {
+    setState(() {
+      _testing = true;
+      _reachable = null;
+    });
+    final ok = await context.api.ping(ServerConfig.normalize(_url.text));
+    if (mounted) {
+      setState(() {
+        _testing = false;
+        _reachable = ok;
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    await ServerConfig.save(_url.text);
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final saved = context.tr('server_saved');
+    Navigator.pop(context);
+    messenger.showSnackBar(SnackBar(content: Text(saved)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.tr('server')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _url,
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            decoration: InputDecoration(labelText: context.tr('server_url'), helperText: context.tr('server_help'), helperMaxLines: 2),
+            onChanged: (_) => setState(() => _reachable = null),
+          ),
+          const SizedBox(height: 12),
+          if (_testing)
+            const Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)))
+          else if (_reachable != null)
+            Text(
+              context.tr(_reachable! ? 'server_ok' : 'server_ko'),
+              style: TextStyle(color: _reachable! ? Colors.green.shade700 : Theme.of(context).colorScheme.error),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: _testing ? null : _test, child: Text(context.tr('server_test'))),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('cancel'))),
+        FilledButton(onPressed: _save, child: Text(context.tr('save'))),
+      ],
+    );
   }
 }
 

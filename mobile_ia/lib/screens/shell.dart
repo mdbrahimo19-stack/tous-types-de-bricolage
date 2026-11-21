@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../config.dart';
 import '../l10n.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
@@ -113,6 +114,12 @@ class ProfileScreen extends StatelessWidget {
               leading: const Icon(Icons.info_outline),
               title: Text(context.tr('become_provider_hint'), style: const TextStyle(fontSize: 13)),
             ),
+          ListTile(
+            leading: const Icon(Icons.dns_outlined),
+            title: Text(context.tr('server')),
+            subtitle: Text(ServerConfig.baseUrl, textDirection: TextDirection.ltr),
+            onTap: () => showServerDialog(context),
+          ),
           ListTile(
             leading: const Icon(Icons.support_agent),
             title: Text(context.tr('support_title')),
