@@ -196,6 +196,9 @@ const Map<String, Map<String, String>> _strings = {
     'server_ok': 'Serveur joignable ✔',
     'server_ko': 'Serveur injoignable à cette adresse',
     'server_saved': 'Adresse du serveur enregistrée',
+    'trust_verified': 'Artisans vérifiés',
+    'trust_quotes': 'Devis gratuits',
+    'trust_reviews': 'Avis clients',
     // --- annuaire des professionnels
     'dir_title': 'Trouver un professionnel',
     'dir_home_sub': 'Parcourez les artisans validés par métier et par wilaya : notes, avis et tarifs.',
@@ -426,6 +429,9 @@ const Map<String, Map<String, String>> _strings = {
     'server_ok': 'الخادم متاح ✔',
     'server_ko': 'تعذّر الوصول إلى الخادم بهذا العنوان',
     'server_saved': 'تم حفظ عنوان الخادم',
+    'trust_verified': 'حرفيون موثّقون',
+    'trust_quotes': 'عروض أسعار مجانية',
+    'trust_reviews': 'آراء الزبائن',
     // --- دليل الحرفيين
     'dir_title': 'ابحث عن حرفي',
     'dir_home_sub': 'تصفّح الحرفيين المعتمدين حسب المهنة والولاية: التقييمات والآراء والأسعار.',
