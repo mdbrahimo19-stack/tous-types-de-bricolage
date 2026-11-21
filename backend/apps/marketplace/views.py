@@ -590,18 +590,63 @@ class ReviewReplyView(generics.GenericAPIView):
 # ==========================================================================
 #  Fiche prestataire publique
 # ==========================================================================
-class PublicProviderViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+def _int_param(request, name):
+    value = request.query_params.get(name)
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        raise ValidationError({name: "Doit être un nombre entier."})
+
+
+class PublicProviderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    """Annuaire public des prestataires validés.
+
+    Filtres de la liste (tous facultatifs) :
+      ?category=<id>   métier (une famille inclut ses prestations)
+      ?wilaya=<id>     wilaya de base ou wilaya d'une commune d'intervention
+      ?commune=<id>    commune d'intervention (ou wilaya de base de cette commune)
+      ?available=1     seulement les prestataires disponibles
+      ?search=<texte>  nom, nom commercial, présentation
+      ?ordering=-rating_avg | -missions_count | -reviews_count
+    """
+
     permission_classes = [AllowAny]
     serializer_class = ProviderPublicProfileSerializer
+    search_fields = ("user__full_name", "business_name", "bio")
+    ordering_fields = ("rating_avg", "missions_count", "reviews_count", "years_experience")
+    ordering = ("-is_available", "-rating_avg", "-reviews_count", "-missions_count", "id")
 
     def get_queryset(self):
-        return (
+        qs = (
             ProviderProfile.objects.filter(
-                verification_status=ProviderProfile.Verification.APPROVED
+                verification_status=ProviderProfile.Verification.APPROVED,
+                user__is_active=True,
             )
-            .select_related("user")
+            .select_related("user", "base_wilaya")
             .prefetch_related("categories__category")
         )
+        if self.action != "list":
+            return qs
+
+        category = _int_param(self.request, "category")
+        if category is not None:
+            qs = qs.filter(Q(categories__category_id=category) | Q(categories__category__parent_id=category))
+
+        wilaya = _int_param(self.request, "wilaya")
+        if wilaya is not None:
+            qs = qs.filter(Q(base_wilaya_id=wilaya) | Q(service_communes__wilaya_id=wilaya))
+
+        commune = _int_param(self.request, "commune")
+        if commune is not None:
+            qs = qs.filter(Q(service_communes__id=commune) | Q(base_wilaya__communes__id=commune))
+
+        if self.request.query_params.get("available") in ("1", "true", "True"):
+            qs = qs.filter(is_available=True)
+
+        # les jointures ci-dessus peuvent dupliquer un prestataire
+        return qs.distinct()
 
     @action(detail=True, methods=["get"])
     def reviews(self, request, pk=None):

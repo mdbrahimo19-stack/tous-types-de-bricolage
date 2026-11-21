@@ -369,22 +369,41 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
 
 class ProviderPublicProfileSerializer(serializers.ModelSerializer):
+    """Fiche publique d'un prestataire (annuaire + détail). Pas de téléphone : le contact
+    passe par une demande de devis et la messagerie de l'app."""
+
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    photo = serializers.ImageField(source="user.photo", read_only=True)
+    base_wilaya = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
     badges = serializers.SerializerMethodField()
 
     class Meta:
         model = ProviderProfile
         fields = (
-            "id", "full_name", "business_name", "legal_status", "bio", "years_experience",
-            "rating_avg", "reviews_count", "missions_count", "is_available",
+            "id", "full_name", "photo", "business_name", "legal_status", "bio", "years_experience",
+            "base_wilaya", "rating_avg", "reviews_count", "missions_count", "is_available",
             "verification_status", "categories", "badges",
         )
 
+    def get_base_wilaya(self, obj):
+        w = obj.base_wilaya
+        return {"id": w.id, "code": w.code, "name_fr": w.name_fr, "name_ar": w.name_ar} if w else None
+
     def get_categories(self, obj):
+        # .all() profite du prefetch_related("categories__category") de la vue
         return [
-            {"id": pc.category_id, "name_fr": pc.category.name_fr, "name_ar": pc.category.name_ar}
-            for pc in obj.categories.select_related("category").all()
+            {
+                "id": pc.category_id,
+                "name_fr": pc.category.name_fr,
+                "name_ar": pc.category.name_ar,
+                "unit": pc.category.unit,
+                "years_experience": pc.years_experience,
+                "hourly_rate": pc.hourly_rate,
+                "flat_rate": pc.flat_rate,
+                "callout_fee": pc.callout_fee,
+            }
+            for pc in obj.categories.all()
         ]
 
     def get_badges(self, obj):
