@@ -176,11 +176,12 @@ class RequestFeedSerializer(serializers.ModelSerializer):
 # --------------------------------------------------------------------------
 class QuoteSerializer(serializers.ModelSerializer):
     provider_detail = serializers.SerializerMethodField()
+    request_title = serializers.CharField(source="request.title", read_only=True)
 
     class Meta:
         model = Quote
         fields = (
-            "id", "request", "provider", "provider_detail", "amount", "lead_time_days",
+            "id", "request", "request_title", "provider", "provider_detail", "amount", "lead_time_days",
             "estimated_duration", "message", "status", "valid_until", "created_at",
         )
         read_only_fields = fields

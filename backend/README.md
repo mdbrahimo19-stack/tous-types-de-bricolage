@@ -36,6 +36,8 @@ python manage.py runserver
 | `DATABASE_URL` | vide → SQLite ; `postgres://user:pass@host:5432/db` en prod |
 | `SMS_BACKEND` | `console` (dev, code affiché dans les logs) / `firebase` (à venir) |
 | `OTP_TTL_SECONDS` | durée de validité d'un code OTP (défaut 300) |
+| `ANTHROPIC_API_KEY` | clé API Claude ; vide → fonctions IA désactivées |
+| `AI_MODEL` | modèle Claude (défaut `claude-opus-5-5`) |
 
 En `DEBUG=True`, `POST /api/auth/otp/request/` renvoie `debug_code` dans la réponse
 (pas de vrai SMS à envoyer pendant le développement).
@@ -139,6 +141,29 @@ l'admin Django) pour voir le fil et envoyer des devis.
 Réputation recalculée dans `apps/marketplace/reputation.py` (note moyenne + `reviews_count` +
 `missions_count`) à la fin de mission et à chaque avis.
 
+## Intelligence artificielle (Claude)
+
+Activée dès que `ANTHROPIC_API_KEY` est renseignée dans `.env` (modèle : `AI_MODEL`,
+`claude-opus-5-5` par défaut). Sans clé : `/api/ai/*` répond 503 et la modération est ignorée.
+Comprend le français, l'arabe et la darija (lettres arabes ou latines).
+
+| Endpoint | Méthode | Description |
+|---|---|---|
+| `/api/ai/draft-request/` | POST `{text}` | texte libre du client → `{category_id, title, description, urgency, budget_min, budget_max, missing_info[], language}` à pré-remplir dans le formulaire de demande (rien n'est enregistré) |
+| `/api/ai/price-estimate/` | POST `{category, description, urgency?, wilaya?, language?}` | fourchette `{min_da, max_da, confidence, explanation, based_on_quotes}`, basée sur le catalogue et les devis réellement acceptés |
+| `/api/ai/support/` | POST `{messages:[{role, content}]}` | chatbot d'aide ; l'app renvoie tout l'historique à chaque tour → `{reply}` |
+
+Connectés uniquement, limités à 30 appels/heure/utilisateur (`ai` dans `DEFAULT_THROTTLE_RATES`).
+
+**Modération automatique** (toujours *fail-open* : si l'IA est indisponible, rien n'est bloqué) :
+- **Avis** : un avis injurieux, frauduleux ou hors sujet est créé en `moderation_status=pending`
+  (invisible publiquement, exclu de la note) en attendant un modérateur.
+- **Messages** : analysés en arrière-plan après l'envoi (aucune latence) ; insultes, arnaques et
+  contournements que la regex ne voit pas (« ajoute-moi sur Insta ») → `flagged=True`.
+- Chaque décision IA est tracée dans le journal d'audit (`action = ai_moderation`, motif inclus).
+
+Code : `apps/ai/` (`client.py` appel API, `prompts.py` prompts système, `services.py` logique).
+
 ## Structure
 
 ```
@@ -149,6 +174,7 @@ backend/
     catalog/         # Category (arbre 2 niveaux), ProviderCategory
     locations/       # Wilaya, Commune, Address
     marketplace/     # ServiceRequest, Quote, Mission, Message, Review, Notification, AuditLog
+    ai/              # Claude : assistant de demande, estimation de prix, support, modération
 ```
 
 ## Tests

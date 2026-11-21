@@ -17,6 +17,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import ProviderProfile, User
+from apps.ai import services as ai
 from apps.catalog.models import ProviderCategory
 
 from .models import (
@@ -551,10 +552,14 @@ class MissionViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.
             raise ValidationError("Vous avez déjà laissé un avis.")
         s = ReviewCreateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
+        # modération IA : un avis injurieux / frauduleux attend une validation manuelle
+        needs_review, verdict = ai.review_needs_moderation(s.validated_data.get("comment", ""))
         review = Review.objects.create(
             mission=mission, author=mission.request.client, target=mission.provider,
+            moderation_status=Review.Moderation.PENDING if needs_review else Review.Moderation.APPROVED,
             **s.validated_data,
         )
+        ai.record_review_verdict(review, verdict)
         self._set_request_status(mission, ServiceRequest.Status.EVALUATED)
         recompute_provider_reputation(mission.provider)
         notify(mission.provider, "review_received", "Nouvel avis",
@@ -666,6 +671,7 @@ class ConversationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
         )
         conv.last_message_at = msg.created_at
         conv.save(update_fields=["last_message_at"])
+        ai.moderate_message_async(msg, conv.contacts_unlocked)
 
         other = conv.provider if request.user.id == conv.client_id else conv.client
         notify(

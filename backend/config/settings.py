@@ -2,6 +2,7 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+import sys
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -20,6 +21,8 @@ SECRET_KEY = os.getenv(
 )
 DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+if DEBUG:
+    ALLOWED_HOSTS.append("10.0.2.2")  # émulateur Android (app mobile en dev)
 
 # --- Applications ----------------------------------------------------------
 INSTALLED_APPS = [
@@ -40,6 +43,7 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.locations",
     "apps.marketplace",
+    "apps.ai",
 ]
 
 MIDDLEWARE = [
@@ -122,7 +126,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_THROTTLE_CLASSES": ("rest_framework.throttling.ScopedRateThrottle",),
-    "DEFAULT_THROTTLE_RATES": {"otp": "5/hour", "auth": "20/hour", "requests": "60/hour"},
+    "DEFAULT_THROTTLE_RATES": {"otp": "5/hour", "auth": "20/hour", "requests": "60/hour", "ai": "30/hour"},
 }
 
 SIMPLE_JWT = {
@@ -150,6 +154,14 @@ FIREBASE_CREDENTIALS_FILE = os.getenv("FIREBASE_CREDENTIALS_FILE", "")
 REQUEST_EXPIRY_DAYS = 7
 MAX_ACTIVE_REQUESTS_PER_CLIENT = 5
 QUOTE_VALIDITY_HOURS = 72
+
+# --- IA (Claude / Anthropic) -------------------------------------
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+AI_MODEL = os.getenv("AI_MODEL", "claude-opus-5-5")
+AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "60"))
+# Sans clé, l'IA est désactivée : endpoints /api/ai/ -> 503, modération ignorée (fail-open).
+# Jamais d'appel réel pendant `manage.py test` (coût + tests non déterministes).
+AI_ENABLED = env_bool("AI_ENABLED", bool(ANTHROPIC_API_KEY)) and "test" not in sys.argv
 
 # --- Sécurité prod ------------------------------------------------
 if not DEBUG:
