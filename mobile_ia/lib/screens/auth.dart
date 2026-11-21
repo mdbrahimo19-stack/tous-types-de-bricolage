@@ -135,51 +135,46 @@ class _PhoneScreenState extends State<PhoneScreen> {
                           ),
                         ),
                       )
-                    : Stack(
+                    // titre en haut (toujours lisible), bulles dans l'espace en dessous
+                    : Column(
                         children: [
-                          const Positioned.fill(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: FloatingServices(),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+                            child: Column(
+                              children: [
+                                Text(
+                                  context.tr('app_name'),
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(
+                                        color: onHero,
+                                        fontWeight: FontWeight.w800,
+                                        height: 1.1,
+                                        shadows: const [
+                                          Shadow(
+                                            color: Colors.black26,
+                                            blurRadius: 12,
+                                            offset: Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  context.tr('welcome_title'),
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: onHero.withValues(alpha: 0.95),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Center(
+                          const Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 56,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    context.tr('app_name'),
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.headlineMedium
-                                        ?.copyWith(
-                                          color: onHero,
-                                          fontWeight: FontWeight.w800,
-                                          height: 1.1,
-                                          shadows: const [
-                                            Shadow(
-                                              color: Colors.black26,
-                                              blurRadius: 12,
-                                              offset: Offset(0, 3),
-                                            ),
-                                          ],
-                                        ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    context.tr('welcome_title'),
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          color: onHero.withValues(alpha: 0.95),
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
-                              ),
+                              padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+                              child: FloatingServices(),
                             ),
                           ),
                         ],

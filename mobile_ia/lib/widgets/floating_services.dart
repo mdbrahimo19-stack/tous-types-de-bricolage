@@ -126,21 +126,21 @@ class _Spot {
   final int service; // index dans kServices
 }
 
-// Disposées en couronne : le centre reste libre pour le titre.
+// Réparties sur toute la zone (le titre est au-dessus, hors de cette zone).
 const _spots = <_Spot>[
-  _Spot(0.06, 0.06, 62, 0, 0.00), // plomberie
-  _Spot(0.40, 0.00, 52, 1, 0.35), // électricité
-  _Spot(0.74, 0.05, 66, 3, 0.70), // peinture
-  _Spot(0.86, 0.33, 50, 2, 0.15), // climatisation
-  _Spot(0.00, 0.36, 54, 5, 0.55), // menuiserie
-  _Spot(0.83, 0.62, 58, 7, 0.90), // nettoyage
-  _Spot(0.03, 0.70, 60, 21, 0.25), // aluminium
-  _Spot(0.30, 0.84, 50, 8, 0.60), // jardinage
-  _Spot(0.58, 0.80, 56, 29, 0.05), // caméras
-  _Spot(0.20, 0.20, 40, 19, 0.80), // serrurerie
-  _Spot(0.66, 0.24, 42, 14, 0.45), // carrelage
-  _Spot(0.14, 0.52, 38, 34, 0.30), // garde d'enfants
-  _Spot(0.72, 0.50, 40, 9, 0.65), // déménagement
+  _Spot(0.02, 0.05, 62, 0, 0.00), // plomberie
+  _Spot(0.27, 0.20, 50, 1, 0.35), // électricité
+  _Spot(0.52, 0.02, 66, 3, 0.70), // peinture
+  _Spot(0.78, 0.18, 54, 2, 0.15), // climatisation
+  _Spot(0.98, 0.00, 44, 19, 0.80), // serrurerie
+  _Spot(0.10, 0.55, 54, 5, 0.55), // menuiserie
+  _Spot(0.38, 0.62, 60, 7, 0.90), // nettoyage
+  _Spot(0.64, 0.50, 48, 29, 0.05), // caméras
+  _Spot(0.92, 0.58, 58, 21, 0.25), // aluminium
+  _Spot(0.00, 1.00, 44, 34, 0.30), // garde d'enfants
+  _Spot(0.24, 0.98, 46, 8, 0.60), // jardinage
+  _Spot(0.55, 1.00, 42, 14, 0.45), // carrelage
+  _Spot(0.80, 0.98, 46, 9, 0.65), // déménagement
 ];
 
 class FloatingServices extends StatefulWidget {
