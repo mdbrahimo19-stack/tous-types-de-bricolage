@@ -26,7 +26,7 @@ if DEBUG:
 
 # --- Applications ----------------------------------------------------------
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "apps.dashboard.admin_config.TTBAdminConfig",  # admin Django + tableau de bord
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.locations",
     "apps.marketplace",
     "apps.ai",
+    "apps.dashboard",
 ]
 
 MIDDLEWARE = [
