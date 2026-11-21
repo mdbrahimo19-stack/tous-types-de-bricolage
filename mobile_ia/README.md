@@ -13,7 +13,7 @@ Django de `../backend`. Interface en français et en arabe (RTL automatique).
    ```
 2. Lancer l'app :
    ```bash
-   cd mobile
+   cd mobile_ia
    flutter run                                                   # émulateur Android (API = 10.0.2.2:8000)
    flutter run --dart-define=API_URL=http://192.168.1.20:8000    # téléphone réel : IP du PC sur le Wi-Fi
    ```
