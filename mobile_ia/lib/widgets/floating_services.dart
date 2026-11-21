@@ -177,12 +177,13 @@ class _FloatingServicesState extends State<FloatingServices>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, box) {
-        // zone trop petite (clavier ouvert) : on n'affiche que les grosses bulles
-        final small = box.maxHeight < 260;
+        // zone très petite : on n'affiche que les grosses bulles
+        final small = box.maxHeight < 110;
         final spots = small
             ? _spots.where((s) => s.size >= 56).toList()
             : _spots;
-        final scale = (box.maxHeight / 360).clamp(0.6, 1.15);
+        // bulles plus petites quand la zone est basse (3 rangées doivent tenir)
+        final scale = (box.maxHeight / 220).clamp(0.55, 1.1);
         return RepaintBoundary(
           child: AnimatedBuilder(
             animation: _ctrl,
