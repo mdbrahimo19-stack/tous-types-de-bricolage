@@ -48,7 +48,16 @@ class _PhoneScreenState extends State<PhoneScreen> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(s.t('login'))),
+      appBar: AppBar(
+        title: Text(s.t('login')),
+        actions: [
+          IconButton(
+            tooltip: s.t('server'),
+            icon: const Icon(Icons.settings_ethernet),
+            onPressed: () => editServerDialog(context),
+          ),
+        ],
+      ),
       body: ListView(padding: const EdgeInsets.all(24), children: [
         const Icon(Icons.phone_android, size: 72),
         const SizedBox(height: 24),

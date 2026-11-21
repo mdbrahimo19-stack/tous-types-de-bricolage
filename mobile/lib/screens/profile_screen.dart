@@ -83,7 +83,10 @@ class ProfileTab extends StatelessWidget {
         leading: const Icon(Icons.dns_outlined),
         title: Text(s.t('server')),
         subtitle: Text(AppConfig.baseUrl, textDirection: TextDirection.ltr),
-        onTap: () => _editServer(context),
+        onTap: () async {
+          await editServerDialog(context);
+          session.touch();
+        },
       ),
       const Divider(),
       ListTile(
@@ -94,33 +97,6 @@ class ProfileTab extends StatelessWidget {
         },
       ),
     ]);
-  }
-
-  Future<void> _editServer(BuildContext context) async {
-    final s = S.of(context);
-    final ctrl = TextEditingController(text: AppConfig.baseUrl);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(s.t('server')),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.url,
-          textDirection: TextDirection.ltr,
-          decoration: InputDecoration(hintText: s.t('server_hint')),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.t('cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.t('save'))),
-        ],
-      ),
-    );
-    final url = ctrl.text;
-    ctrl.dispose();
-    if (ok == true) {
-      await AppConfig.setBaseUrl(url);
-      if (context.mounted) toast(context, s.t('saved'));
-    }
   }
 }
 

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -176,5 +177,72 @@ class Stars extends StatelessWidget {
       Text(rating.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.w600)),
       if (count != null) Text(' ($count)', style: const TextStyle(color: Colors.grey)),
     ]);
+  }
+}
+
+/// Réglage de l'adresse du serveur, avec test de connexion (`/api/health/`).
+Future<void> editServerDialog(BuildContext context) async {
+  final s = S.of(context);
+  final ctrl = TextEditingController(text: AppConfig.baseUrl);
+  String? result;
+  var testing = false;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setLocal) => AlertDialog(
+        title: Text(s.t('server')),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          TextField(
+            controller: ctrl,
+            keyboardType: TextInputType.url,
+            textDirection: TextDirection.ltr,
+            decoration: InputDecoration(hintText: s.t('server_hint')),
+          ),
+          const SizedBox(height: 8),
+          Text(s.t('server_help'), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          if (result != null) ...[
+            const SizedBox(height: 8),
+            Text(result!, style: TextStyle(color: result == s.t('server_ok') ? Colors.green : Colors.red)),
+          ],
+        ]),
+        actions: [
+          TextButton(
+            onPressed: testing
+                ? null
+                : () async {
+                    setLocal(() {
+                      testing = true;
+                      result = null;
+                    });
+                    var url = ctrl.text.trim();
+                    while (url.endsWith('/')) {
+                      url = url.substring(0, url.length - 1);
+                    }
+                    try {
+                      await Dio(BaseOptions(connectTimeout: const Duration(seconds: 6)))
+                          .get('$url/api/health/');
+                      result = s.t('server_ok');
+                    } on DioException catch (e) {
+                      result = e.response != null
+                          ? '${s.t('server_ko')} (HTTP ${e.response!.statusCode})'
+                          : s.t('server_ko');
+                    } catch (_) {
+                      result = s.t('server_ko');
+                    }
+                    setLocal(() => testing = false);
+                  },
+            child: Text(testing ? '…' : s.t('server_test')),
+          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.t('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(s.t('save'))),
+        ],
+      ),
+    ),
+  );
+  final url = ctrl.text;
+  ctrl.dispose();
+  if (ok == true) {
+    await AppConfig.setBaseUrl(url);
+    if (context.mounted) toast(context, s.t('saved'));
   }
 }

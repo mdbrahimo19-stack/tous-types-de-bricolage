@@ -95,6 +95,9 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Redessine l'interface (ex. après changement d'adresse du serveur).
+  void touch() => notifyListeners();
+
   Future<void> logout() async {
     final refresh = api.refreshToken;
     if (refresh != null) {
