@@ -10,6 +10,9 @@ on:
       - "mobile/**"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -56,3 +59,16 @@ jobs:
           name: ttb-debug-apk
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
+
+      # APK téléchargeable directement depuis le téléphone (onglet Releases).
+      - name: Publier l'APK dans la release « apk-test »
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk bricolages-test.apk
+          NOTES="APK de test (debug) — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
+          gh release delete apk-test --yes --cleanup-tag 2>/dev/null || true
+          gh release create apk-test bricolages-test.apk \
+            --prerelease --target "$GITHUB_SHA" \
+            --title "APK de test (dernière compilation)" --notes "$NOTES"
