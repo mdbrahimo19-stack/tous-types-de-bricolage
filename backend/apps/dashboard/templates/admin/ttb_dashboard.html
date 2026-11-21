@@ -1,0 +1,99 @@
+{% extends "admin/index.html" %}
+
+{% block coltype %}colM{% endblock %}
+{% block sidebar %}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+  .ttb-section { margin: 0 0 28px; }
+  .ttb-section > h2 { font-size: 1rem; margin: 0 0 10px; color: var(--body-quiet-color); text-transform: uppercase; letter-spacing: .04em; }
+  .ttb-grid { display: grid; gap: 12px; }
+  .ttb-figures { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .ttb-cards { grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); }
+  .ttb-figure, .ttb-card { background: var(--body-bg); border: 1px solid var(--hairline-color); border-radius: 8px; }
+  .ttb-figure { display: block; padding: 12px 14px; text-decoration: none !important; }
+  .ttb-figure:hover { border-color: var(--primary); }
+  .ttb-figure .v { display: block; font-size: 1.6rem; font-weight: 600; color: var(--body-fg); line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .ttb-figure .l { display: block; color: var(--body-quiet-color); font-size: .85rem; margin-top: 2px; }
+  .ttb-figure .h { display: block; color: var(--link-fg); font-size: .8rem; margin-top: 4px; }
+  .ttb-card > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--hairline-color); }
+  .ttb-card > header h3 { margin: 0; font-size: .95rem; color: var(--body-fg); }
+  .ttb-badge { min-width: 22px; padding: 1px 8px; border-radius: 999px; font-weight: 600; font-size: .8rem; text-align: center; background: var(--darkened-bg); color: var(--body-quiet-color); }
+  .ttb-badge.alert { background: var(--message-warning-bg); color: var(--body-fg); }
+  .ttb-card ul { list-style: none; margin: 0; padding: 4px 0; }
+  .ttb-card li { padding: 6px 14px; display: flex; gap: 10px; align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--hairline-color); }
+  .ttb-card li:last-child { border-bottom: 0; }
+  .ttb-card li a { overflow-wrap: anywhere; }
+  .ttb-card .meta { color: var(--body-quiet-color); font-size: .8rem; white-space: nowrap; text-align: right; }
+  .ttb-card .empty { padding: 12px 14px; color: var(--body-quiet-color); }
+  .ttb-card > footer { padding: 8px 14px; border-top: 1px solid var(--hairline-color); font-size: .85rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+
+  <section class="ttb-section">
+    <h2>À traiter</h2>
+    <div class="ttb-grid ttb-cards">
+      {% for s in ttb_todo %}
+      <div class="ttb-card">
+        <header>
+          <h3>{{ s.title }}</h3>
+          <span class="ttb-badge{% if s.count %} alert{% endif %}">{{ s.count }}</span>
+        </header>
+        {% if s.items %}
+          <ul>{% for it in s.items %}<li><a href="{{ it.url }}">{{ it.text }}</a></li>{% endfor %}</ul>
+          <footer><a href="{{ s.list_url }}">Tout voir ({{ s.count }}) →</a></footer>
+        {% else %}
+          <div class="empty">{{ s.empty }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="ttb-section">
+    <h2>Chiffres clés</h2>
+    <div class="ttb-grid ttb-figures">
+      {% for f in ttb_figures %}
+      <a class="ttb-figure" href="{{ f.url }}">
+        <span class="v">{{ f.value }}</span>
+        <span class="l">{{ f.label }}</span>
+        {% if f.hint %}<span class="h">{{ f.hint }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="ttb-section">
+    <h2>Activité récente</h2>
+    <div class="ttb-grid ttb-cards">
+      {% for block in ttb_recent %}
+      <div class="ttb-card">
+        <header><h3>{{ block.title }}</h3></header>
+        {% if block.rows %}
+          <ul>
+            {% for r in block.rows %}
+            <li>
+              <a href="{{ r.url }}">{{ r.text }}</a>
+              <span class="meta">{{ r.status }}<br>{{ r.date|date:"d/m H:i" }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+          <footer><a href="{{ block.list_url }}">Tout voir →</a></footer>
+        {% else %}
+          <div class="empty">Rien pour l'instant.</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="ttb-section">
+    <h2>Toutes les tables</h2>
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+  </section>
+
+</div>
+{% endblock %}

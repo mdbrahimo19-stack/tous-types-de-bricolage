@@ -26,7 +26,7 @@ if DEBUG:
 
 # --- Applications ----------------------------------------------------------
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "apps.dashboard.admin_config.TTBAdminConfig",  # admin Django + tableau de bord
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.locations",
     "apps.marketplace",
     "apps.ai",
+    "apps.dashboard",
 ]
 
 MIDDLEWARE = [
@@ -162,6 +163,11 @@ AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "60"))
 # Sans clé, l'IA est désactivée : endpoints /api/ai/ -> 503, modération ignorée (fail-open).
 # Jamais d'appel réel pendant `manage.py test` (coût + tests non déterministes).
 AI_ENABLED = env_bool("AI_ENABLED", bool(ANTHROPIC_API_KEY)) and "test" not in sys.argv
+
+# Noms de cookies propres au projet : évite les conflits avec d'autres projets
+# servis sur la même adresse (ex. un ancien `csrftoken` resté dans le navigateur).
+CSRF_COOKIE_NAME = "ttb_csrftoken"
+SESSION_COOKIE_NAME = "ttb_sessionid"
 
 # --- Sécurité prod ------------------------------------------------
 if not DEBUG:
