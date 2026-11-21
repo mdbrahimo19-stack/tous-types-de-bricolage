@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 from .otp import issue_otp, verify_otp
+from .sms import SMSError
 from .serializers import (
     OTPRequestSerializer,
     OTPVerifySerializer,
@@ -35,7 +36,13 @@ class OTPRequestView(APIView):
                 {"detail": "Aucun compte associé à ce numéro."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        _, code = issue_otp(phone, purpose)
+        try:
+            _, code = issue_otp(phone, purpose)
+        except SMSError:
+            return Response(
+                {"detail": "Envoi du SMS impossible pour le moment. Réessayez dans quelques minutes."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         payload = {"detail": "Code envoyé par SMS.", "expires_in": settings.OTP_TTL_SECONDS}
         if settings.OTP_EXPOSE_IN_RESPONSE:
             payload["debug_code"] = code  # uniquement en DEBUG

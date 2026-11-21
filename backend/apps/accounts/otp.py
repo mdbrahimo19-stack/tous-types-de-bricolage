@@ -6,7 +6,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.utils import timezone
 
 from .models import PhoneOTP
-from .sms import send_sms
+from .sms import SMSError, send_sms
 
 
 def _generate_code(length: int | None = None) -> str:
@@ -15,7 +15,11 @@ def _generate_code(length: int | None = None) -> str:
 
 
 def issue_otp(phone, purpose: str):
-    """Crée un OTP, envoie le SMS, renvoie (otp, code_en_clair)."""
+    """Crée un OTP, envoie le SMS, renvoie (otp, code_en_clair).
+
+    Lève `SMSError` si le SMS n'a pas pu partir : le code est alors supprimé,
+    pour qu'aucun code « fantôme » (jamais reçu) ne reste valable.
+    """
     code = _generate_code()
     otp = PhoneOTP.objects.create(
         phone=phone,
@@ -23,7 +27,11 @@ def issue_otp(phone, purpose: str):
         purpose=purpose,
         expires_at=PhoneOTP.default_expiry(),
     )
-    send_sms(str(phone), f"Tous Types de Bricolages : votre code de vérification est {code}")
+    try:
+        send_sms(str(phone), f"Tous Types de Bricolages : votre code de vérification est {code}")
+    except SMSError:
+        otp.delete()
+        raise
     return otp, code
 
 
