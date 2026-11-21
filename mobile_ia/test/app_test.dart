@@ -69,6 +69,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('le champ téléphone garde la main quand le clavier s\'ouvre', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.devicePixelRatio = 3;
+    tester.view.physicalSize = const Size(412 * 3, 915 * 3);
+    addTearDown(tester.view.reset);
+    final session = Session(ApiClient());
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(value: session, child: const TtbApp()),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final field = find.byType(TextField);
+    await tester.tap(field);
+    await tester.pump();
+    // le clavier apparaît : l'écran passe en mode compact
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320 * 3);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final editable = tester.state<EditableTextState>(find.byType(EditableText));
+    expect(
+      editable.widget.focusNode.hasFocus,
+      isTrue,
+      reason: 'le champ a perdu le focus',
+    );
+    await tester.enterText(field, '0661234567');
+    await tester.pump();
+    expect(find.text('0661234567'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('petit écran et clavier ouvert : aucun débordement', (
     tester,
   ) async {

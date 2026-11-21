@@ -19,6 +19,11 @@ class _PhoneScreenState extends State<PhoneScreen> {
   final _phone = TextEditingController();
   bool _busy = false;
 
+  /// Clé stable de la carte de connexion : quand le clavier s'ouvre, l'écran passe en
+  /// mode compact (autre parent). Sans cette clé, la carte serait recréée, le champ
+  /// perdrait le focus, le clavier se refermerait… et on ne pourrait jamais écrire.
+  final _cardKey = GlobalKey();
+
   Future<void> _continue() async {
     final phone = _phone.text.replaceAll(' ', '').trim();
     if (phone.length < 9) return;
@@ -76,8 +81,9 @@ class _PhoneScreenState extends State<PhoneScreen> {
         ),
         child: SafeArea(
           bottom: false,
-          child: _ResponsiveColumn(
-            compact: compact,
+          // Structure FIXE (même colonne, même ordre) quel que soit le mode : si la carte
+          // changeait de parent ou de place, le champ serait recréé et perdrait le focus.
+          child: Column(
             children: [
               // --- barre du haut : serveur + langue
               Padding(
@@ -110,66 +116,75 @@ class _PhoneScreenState extends State<PhoneScreen> {
               ),
 
               // --- zone héros : services qui flottent autour du titre
-              if (compact)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                  child: Text(
-                    context.tr('app_name'),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: onHero,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                )
-              else
-                Expanded(
-                  child: Stack(
-                    children: [
-                      const Positioned.fill(
+              // (mode compact : seulement le nom de l'app, réduit si besoin)
+              Expanded(
+                child: compact
+                    ? Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: FloatingServices(),
-                        ),
-                      ),
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 56),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                context.tr('app_name'),
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  color: onHero,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.1,
-                                  shadows: const [
-                                    Shadow(
-                                      color: Colors.black26,
-                                      blurRadius: 12,
-                                      offset: Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              context.tr('app_name'),
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: onHero,
+                                fontWeight: FontWeight.w800,
                               ),
-                              const SizedBox(height: 10),
-                              Text(
-                                context.tr('welcome_title'),
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: onHero.withValues(alpha: 0.95),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
+                      )
+                    : Stack(
+                        children: [
+                          const Positioned.fill(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: FloatingServices(),
+                            ),
+                          ),
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 56,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    context.tr('app_name'),
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.headlineMedium
+                                        ?.copyWith(
+                                          color: onHero,
+                                          fontWeight: FontWeight.w800,
+                                          height: 1.1,
+                                          shadows: const [
+                                            Shadow(
+                                              color: Colors.black26,
+                                              blurRadius: 12,
+                                              offset: Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    context.tr('welcome_title'),
+                                    textAlign: TextAlign.center,
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          color: onHero.withValues(alpha: 0.95),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+              ),
 
               // --- tous les services, en deux bandeaux qui défilent en sens inverse
               if (showMarquee) ...[
@@ -185,6 +200,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
               // --- carte de connexion
               Container(
+                key: _cardKey,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: scheme.surface,
@@ -219,7 +235,10 @@ class _PhoneScreenState extends State<PhoneScreen> {
                       ),
                       const SizedBox(height: 18),
                     ],
+                    // clé fixe : le champ reste le même widget même si le texte
+                    // au-dessus disparaît (mode compact) -> il garde le focus
                     TextField(
+                      key: const ValueKey('phone-field'),
                       controller: _phone,
                       keyboardType: TextInputType.phone,
                       textDirection: TextDirection.ltr,
@@ -239,6 +258,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
                     ),
                     const SizedBox(height: 14),
                     FilledButton(
+                      key: const ValueKey('continue-button'),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(54),
                         shape: RoundedRectangleBorder(
@@ -285,20 +305,6 @@ class _PhoneScreenState extends State<PhoneScreen> {
         ),
       ),
     );
-  }
-}
-
-/// Colonne pleine hauteur (zone héros extensible), ou défilable en mode compact.
-class _ResponsiveColumn extends StatelessWidget {
-  const _ResponsiveColumn({required this.compact, required this.children});
-
-  final bool compact;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!compact) return Column(children: children);
-    return SingleChildScrollView(child: Column(children: children));
   }
 }
 
