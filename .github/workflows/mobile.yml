@@ -1,13 +1,14 @@
 name: App mobile (Flutter)
 
+# Compile l'application unique client + professionnel (dossier mobile_ia/).
 on:
   push:
     paths:
-      - "mobile/**"
+      - "mobile_ia/**"
       - ".github/workflows/mobile.yml"
   pull_request:
     paths:
-      - "mobile/**"
+      - "mobile_ia/**"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile
+        working-directory: mobile_ia
     steps:
       - uses: actions/checkout@v4
 
@@ -35,14 +36,6 @@ jobs:
       - name: Version de Flutter
         run: flutter --version
 
-      # Le dossier android/ est généré s'il n'est pas encore dans le dépôt.
-      - name: Générer le projet Android
-        run: |
-          if [ ! -d android ]; then
-            flutter create --platforms=android --org dz.ttb --project-name ttb .
-            python3 ../tools/ci/patch_android.py android
-          fi
-
       - run: flutter pub get
 
       - name: Analyse du code
@@ -58,7 +51,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: ttb-apk
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          path: mobile_ia/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
       # APK téléchargeable directement depuis le téléphone (onglet Releases).
@@ -68,7 +61,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp build/app/outputs/flutter-apk/app-release.apk bricolages-test.apk
-          NOTES="APK de test — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
+          NOTES="APK de test (client + professionnel) — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
           gh release delete apk-test --yes --cleanup-tag 2>/dev/null || true
           gh release create apk-test bricolages-test.apk \
             --prerelease --target "$GITHUB_SHA" \

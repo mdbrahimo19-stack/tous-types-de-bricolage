@@ -18,6 +18,13 @@ Django de `../backend`. Interface en français et en arabe (RTL automatique).
    flutter run --dart-define=API_URL=http://192.168.1.20:8000    # téléphone réel : IP du PC sur le Wi-Fi
    ```
    Pour un téléphone réel, ajouter l'IP du PC dans `DJANGO_ALLOWED_HOSTS` du `.env` backend.
+   L'adresse du serveur se change aussi dans l'app, sans recompiler : icône « Serveur » sur
+   l'écran de connexion, ou **Profil → Serveur** (bouton **Tester** pour vérifier).
+
+## APK sans installer Flutter
+
+Chaque envoi sur GitHub qui touche `mobile_ia/` compile l'APK (onglet **Actions** → « App mobile (Flutter) »).
+Il est publié dans la release **apk-test** (`bricolages-test.apk`), téléchargeable depuis le téléphone.
 
 En mode `DEBUG` côté Django, le code SMS est renvoyé par l'API et pré-rempli dans l'écran OTP
 (aucun vrai SMS n'est envoyé).
