@@ -22,7 +22,10 @@ SECRET_KEY = os.getenv(
 DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 if DEBUG:
-    ALLOWED_HOSTS.append("10.0.2.2")  # émulateur Android (app mobile en dev)
+    # En développement, le serveur est joint par l'IP du PC, qui change avec le Wi-Fi
+    # (téléphone réel, émulateur 10.0.2.2…) : on accepte toutes les adresses.
+    # En production (DEBUG=False), seule la liste DJANGO_ALLOWED_HOSTS s'applique.
+    ALLOWED_HOSTS = ["*"]
 
 # --- Applications ----------------------------------------------------------
 INSTALLED_APPS = [
