@@ -5,7 +5,7 @@ Application Flutter de la marketplace « Tous Types de Bricolages », côté **c
 ## Récupérer l'APK sans installer Flutter
 
 Chaque envoi sur GitHub qui touche `mobile/` lance la compilation (onglet **Actions** → « App mobile (Flutter) »).
-En bas de la page du run, téléchargez l'artefact **ttb-debug-apk**, décompressez-le et installez `app-debug.apk` sur le téléphone.
+En bas de la page du run, téléchargez la release **apk-test** (onglet Releases) contient `bricolages-test.apk`, à installer directement sur le téléphone.
 
 ## Lancer en local
 

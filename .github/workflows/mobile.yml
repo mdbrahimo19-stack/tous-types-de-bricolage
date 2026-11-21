@@ -51,13 +51,14 @@ jobs:
       - name: Tests
         run: flutter test
 
-      - name: Build APK (debug)
-        run: flutter build apk --debug
+      # APK optimisé pour les téléphones récents (arm64), signé avec la clé de test.
+      - name: Build APK
+        run: flutter build apk --release --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ttb-debug-apk
-          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          name: ttb-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 14
 
       # APK téléchargeable directement depuis le téléphone (onglet Releases).
@@ -66,8 +67,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp build/app/outputs/flutter-apk/app-debug.apk bricolages-test.apk
-          NOTES="APK de test (debug) — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
+          cp build/app/outputs/flutter-apk/app-release.apk bricolages-test.apk
+          NOTES="APK de test — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
           gh release delete apk-test --yes --cleanup-tag 2>/dev/null || true
           gh release create apk-test bricolages-test.apk \
             --prerelease --target "$GITHUB_SHA" \
