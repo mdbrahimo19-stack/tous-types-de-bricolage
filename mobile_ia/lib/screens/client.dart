@@ -7,9 +7,9 @@ import 'package:provider/provider.dart';
 import '../api/api_client.dart';
 import '../config.dart';
 import '../l10n.dart';
+import '../location.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
-import 'directory.dart';
 import 'shared.dart';
 
 const _urgencies = ['immediate', 'today', 'this_week', 'flexible'];
@@ -103,12 +103,9 @@ class ClientHomeScreen extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 leading: CircleAvatar(
                   backgroundColor: scheme.secondaryContainer,
-                  child: Icon(Icons.person_search, color: scheme.onSecondaryContainer),
+                  child: Icon(Icons.near_me, color: scheme.onSecondaryContainer),
                 ),
-                title: Text(context.tr('dir_title'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(context.tr('dir_home_sub')),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DirectoryScreen())),
+                title: Text(context.tr('home_nearest')),
               ),
             ),
             SectionTitle(context.tr('categories')),
@@ -247,6 +244,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
   Json? _category;
   int? _wilaya;
   int? _commune;
+  GpsFix? _gps; // position du téléphone : sert à trouver les bricoleurs les plus proches
   String _urgency = 'this_week';
   final List<File> _photos = [];
   List<String> _missingInfo = [];
@@ -335,6 +333,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         'description': _description.text.trim(),
         'wilaya': _wilaya,
         'commune': _commune,
+        ...?_gps?.toJson(),
         'urgency': _urgency,
         if (toNum(_budgetMin.text) != null) 'budget_min': toNum(_budgetMin.text),
         if (toNum(_budgetMax.text) != null) 'budget_max': toNum(_budgetMax.text),
@@ -413,6 +412,8 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
               validator: (v) => (v ?? '').trim().isEmpty ? context.tr('required') : null,
             ),
             const SizedBox(height: 12),
+            GpsCard(onChanged: (fix) => _gps = fix),
+            const SizedBox(height: 8),
             LocationFields(onChanged: (w, c) {
               _wilaya = w;
               _commune = c;
@@ -692,6 +693,18 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                 UrgencyChip('${r['urgency']}'),
                 Text(context.nameOf(r['category_detail'] as Map?)),
               ]),
+              if (open) ...[
+                const SizedBox(height: 12),
+                Row(children: [
+                  const Icon(Icons.near_me, size: 18),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text((r['dispatched_count'] as num? ?? 0) > 0
+                        ? context.tr('dispatched', {'n': r['dispatched_count']})
+                        : context.tr('dispatched_none')),
+                  ),
+                ]),
+              ],
               const SizedBox(height: 12),
               Text('${r['description']}'),
               if (r['budget_min'] != null || r['budget_max'] != null) ...[

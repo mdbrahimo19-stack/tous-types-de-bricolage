@@ -1,5 +1,5 @@
 # Production : base PostgreSQL + backend Django + Caddy (HTTPS automatique)
-# + tâche horaire (expiration des demandes).
+# + tâche planifiée (envoi aux bricoleurs suivants, expiration des demandes).
 #
 #   cd deploy
 #   cp .env.example .env    # puis remplir .env
@@ -45,7 +45,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # expire les demandes arrivées à échéance (RG-02), toutes les heures
+  # toutes les 5 minutes : envoie aux bricoleurs suivants les demandes sans devis,
+  # puis expire les demandes arrivées à échéance (RG-02)
   scheduler:
     build: ../backend
     restart: unless-stopped
@@ -55,7 +56,7 @@ services:
     depends_on:
       web:
         condition: service_healthy
-    command: sh -c "while true; do python manage.py expire_requests; sleep 3600; done"
+    command: sh -c "while true; do python manage.py dispatch_requests; python manage.py expire_requests; sleep 300; done"
 
   caddy:
     image: caddy:2-alpine

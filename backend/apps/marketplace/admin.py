@@ -8,6 +8,7 @@ from .models import (
     MissionPhoto,
     Notification,
     Quote,
+    RequestDispatch,
     RequestPhoto,
     Review,
     ServiceRequest,
@@ -26,6 +27,19 @@ class QuoteInline(admin.TabularInline):
     readonly_fields = ("created_at",)
 
 
+class RequestDispatchInline(admin.TabularInline):
+    """À quels bricoleurs (les plus proches) la demande a été envoyée, et quand."""
+
+    model = RequestDispatch
+    extra = 0
+    can_delete = False
+    fields = ("provider", "wave", "distance_km", "sent_at")
+    readonly_fields = fields
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(ServiceRequest)
 class ServiceRequestAdmin(admin.ModelAdmin):
     list_display = ("id", "title", "category", "client", "commune", "urgency", "status", "published_at", "expires_at")
@@ -33,7 +47,7 @@ class ServiceRequestAdmin(admin.ModelAdmin):
     search_fields = ("title", "description", "client__phone", "client__full_name")
     autocomplete_fields = ("client", "category", "address", "wilaya", "commune")
     date_hierarchy = "created_at"
-    inlines = [RequestPhotoInline, QuoteInline]
+    inlines = [RequestDispatchInline, RequestPhotoInline, QuoteInline]
 
 
 @admin.register(Quote)

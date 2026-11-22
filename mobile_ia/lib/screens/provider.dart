@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../api/api_client.dart';
 import '../l10n.dart';
+import '../location.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
 import 'client.dart' show PriceEstimateCard;
@@ -36,21 +37,27 @@ class FeedScreen extends StatelessWidget {
               load: () => context.api.listAll('/api/feed/'),
               builder: (context, items, reload) {
                 if (items.isEmpty) {
-                  return EmptyState(
-                    icon: Icons.search_off,
-                    text: context.tr('no_feed'),
-                    action: TextButton(
-                      onPressed: () =>
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ProviderSetupScreen())),
-                      child: Text(context.tr('setup_profile')),
+                  return Column(children: [
+                    const _MissingGpsBanner(),
+                    Expanded(
+                      child: EmptyState(
+                        icon: Icons.search_off,
+                        text: context.tr('no_feed'),
+                        action: TextButton(
+                          onPressed: () =>
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProviderSetupScreen())),
+                          child: Text(context.tr('setup_profile')),
+                        ),
+                      ),
                     ),
-                  );
+                  ]);
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
-                  itemCount: items.length,
-                  itemBuilder: (context, i) {
-                    final r = items[i];
+                  itemCount: items.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) return const _MissingGpsBanner();
+                    final r = items[index - 1];
                     final distance = toNum(r['distance_km']);
                     return Card(
                       child: InkWell(
@@ -100,6 +107,42 @@ class FeedScreen extends StatelessWidget {
                 );
               },
             ),
+    );
+  }
+}
+
+/// Rappel affiché dans le fil tant que le bricoleur n'a pas enregistré sa position de travail.
+class _MissingGpsBanner extends StatefulWidget {
+  const _MissingGpsBanner();
+
+  @override
+  State<_MissingGpsBanner> createState() => _MissingGpsBannerState();
+}
+
+class _MissingGpsBannerState extends State<_MissingGpsBanner> {
+  late final Future<bool> _hasGps = context.api
+      .get('/api/provider/me/')
+      .then((p) => (p as Map)['latitude'] != null && p['longitude'] != null)
+      .catchError((_) => true);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _hasGps,
+      builder: (context, snap) {
+        if (snap.data != false) return const SizedBox.shrink();
+        final scheme = Theme.of(context).colorScheme;
+        return Card(
+          color: scheme.tertiaryContainer,
+          margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: ListTile(
+            leading: Icon(Icons.location_off, color: scheme.onTertiaryContainer),
+            title: Text(context.tr('feed_no_gps'), style: TextStyle(color: scheme.onTertiaryContainer)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProviderSetupScreen())),
+          ),
+        );
+      },
     );
   }
 }
@@ -345,6 +388,10 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
   bool _available = true;
   int? _baseWilaya;
   Set<int> _communes = {};
+  double? _lat; // position de travail (GPS) : les demandes proches arrivent en priorité
+  double? _lng;
+  int _radius = 10;
+  bool _locating = false;
   String _verification = 'pending';
   List<Json> _categories = [];
   List<Json> _wilayas = [];
@@ -374,6 +421,9 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
       _available = p['is_available'] != false;
       _baseWilaya = p['base_wilaya'] as int?;
       _communes = ((p['service_communes'] as List?) ?? const []).cast<int>().toSet();
+      _lat = toNum(p['latitude'])?.toDouble();
+      _lng = toNum(p['longitude'])?.toDouble();
+      _radius = (toNum(p['radius_km'])?.toInt() ?? 10).clamp(1, 50);
       _verification = '${p['verification_status'] ?? 'pending'}';
       _categories = results[1] as List<Json>;
       _wilayas = results[2] as List<Json>;
@@ -394,6 +444,23 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
     if (id != null) {
       final list = await Refs.communes(context.api, id);
       if (mounted) setState(() => _wilayaCommunes = list);
+    }
+  }
+
+  Future<void> _takePosition() async {
+    setState(() => _locating = true);
+    try {
+      final fix = await currentPosition();
+      if (mounted) {
+        setState(() {
+          _lat = round6(fix.latitude);
+          _lng = round6(fix.longitude);
+        });
+      }
+    } on GpsException catch (e) {
+      if (mounted) showInfo(context, context.tr(e.l10nKey));
+    } finally {
+      if (mounted) setState(() => _locating = false);
     }
   }
 
@@ -458,6 +525,8 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
         'is_available': _available,
         'base_wilaya': _baseWilaya,
         'service_communes': _communes.toList(),
+        'radius_km': _radius,
+        if (_lat != null && _lng != null) ...{'latitude': _lat, 'longitude': _lng},
       });
       await session.refreshUser();
     });
@@ -495,6 +564,32 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
                       onPressed: _addCategory,
                     ),
                 ]),
+                SectionTitle(context.tr('work_zone')),
+                Text(context.tr('work_zone_sub'), style: Theme.of(context).textTheme.bodySmall),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(_lat != null ? Icons.my_location : Icons.location_off,
+                      color: _lat != null ? Theme.of(context).colorScheme.primary : null),
+                  title: Text(context.tr(_lat != null ? 'work_pos_set' : 'work_pos_missing')),
+                  subtitle: _lat != null ? Text('${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}') : null,
+                ),
+                OutlinedButton.icon(
+                  onPressed: _locating ? null : _takePosition,
+                  icon: _locating
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.gps_fixed),
+                  label: Text(context.tr('work_pos_update')),
+                ),
+                const SizedBox(height: 8),
+                Text(context.tr('work_radius', {'n': _radius})),
+                Slider(
+                  value: _radius.toDouble(),
+                  min: 1,
+                  max: 50,
+                  divisions: 49,
+                  label: '$_radius km',
+                  onChanged: (v) => setState(() => _radius = v.round()),
+                ),
                 SectionTitle(context.tr('base_wilaya')),
                 DropdownButtonFormField<int>(
                   initialValue: _baseWilaya,

@@ -2,7 +2,12 @@
 
 Ce dossier contient tout ce qu'il faut pour faire tourner le backend en production sur un
 serveur loué (VPS) : base **PostgreSQL**, **backend Django** (gunicorn), **Caddy** (HTTPS
-automatique et gratuit) et une **tâche horaire** qui fait expirer les vieilles demandes.
+automatique et gratuit) et une **tâche planifiée** (toutes les 5 minutes) qui envoie aux
+bricoleurs suivants les demandes restées sans devis et fait expirer les vieilles demandes.
+
+Réglages de l'envoi aux plus proches (facultatifs, dans `.env`) : `DISPATCH_BATCH_SIZE=5`
+(bricoleurs par vague), `DISPATCH_WAVE_MINUTES=15` (attente avant la vague suivante),
+`DISPATCH_MAX_WAVES=4`.
 
 Durée : environ 1 h la première fois.
 

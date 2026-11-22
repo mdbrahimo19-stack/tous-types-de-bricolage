@@ -3,8 +3,12 @@ from django.db import transaction
 from django.db.models import (
     Case,
     Count,
+    Exists,
+    F,
     IntegerField,
+    OuterRef,
     Q,
+    Subquery,
     When,
 )
 from django.utils import timezone
@@ -27,10 +31,12 @@ from .models import (
     MissionPhoto,
     Notification,
     Quote,
+    RequestDispatch,
     RequestPhoto,
     Review,
     ServiceRequest,
 )
+from . import dispatch
 from .notifications import notify, notify_many
 from .permissions import IsRequestOwner, IsVerifiedProvider
 from .reputation import recompute_provider_reputation
@@ -77,7 +83,10 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
             .filter(client=self.request.user)
             .select_related("category", "wilaya", "commune", "address")
             .prefetch_related("photos")
-            .annotate(quotes_count=Count("quotes"))
+            .annotate(
+                quotes_count=Count("quotes", distinct=True),
+                dispatched_count=Count("dispatches", distinct=True),
+            )
             .order_by("-created_at")
         )
 
@@ -112,7 +121,18 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
             )
         if not instance.photos.exists() and not instance.description:
             raise ValidationError("Ajoutez au moins une description ou une photo avant de publier.")
+        if instance.status == ServiceRequest.Status.EXPIRED:
+            instance.dispatches.all().delete()  # republication : on repart de la 1re vague
         instance.publish()
+        # envoi immédiat aux bricoleurs les plus proches (1re vague)
+        instance.dispatched_count = dispatch.send_wave(instance)
+        if instance.dispatched_count == 0:
+            notify(
+                instance.client, "request_no_provider", "Recherche en cours",
+                "Aucun bricoleur n'est disponible près de chez vous pour l'instant. "
+                "Nous continuons à chercher et vous prévenons dès qu'un devis arrive.",
+                data={"request_id": instance.id},
+            )
 
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
@@ -220,20 +240,19 @@ class RequestFeedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         return _provider_profile(self.request.user)
 
     def get_queryset(self):
+        """Uniquement les demandes envoyées à ce bricoleur (il fait partie des plus proches)."""
         profile = self._profile()
-        cat_ids = list(profile.categories.values_list("category_id", flat=True))
-        commune_ids = list(profile.service_communes.values_list("id", flat=True))
+        mine = RequestDispatch.objects.filter(request=OuterRef("pk"), provider=profile)
         return (
             ServiceRequest.objects.filter(
+                Exists(mine),
                 status__in=[ServiceRequest.Status.PUBLISHED, ServiceRequest.Status.QUOTES_RECEIVED],
-                category_id__in=cat_ids,
-                commune_id__in=commune_ids,
             )
             .exclude(client=self.request.user)
             .select_related("category", "commune", "wilaya")
             .prefetch_related("photos")
-            .annotate(u_rank=_URGENCY_RANK)
-            .order_by("u_rank", "-published_at")
+            .annotate(u_rank=_URGENCY_RANK, my_distance=Subquery(mine.values("distance_km")[:1]))
+            .order_by("u_rank", F("my_distance").asc(nulls_last=True), "-published_at")
         )
 
     def get_serializer_context(self):
@@ -315,10 +334,11 @@ class QuoteViewSet(
 
     @staticmethod
     def _check_provider_can_serve(profile, req):
-        if not profile.categories.filter(category_id=req.category_id).exists():
-            raise ValidationError("Cette demande n'est pas dans vos catégories.")
-        if not profile.service_communes.filter(id=req.commune_id).exists():
-            raise ValidationError("Cette demande est hors de votre zone d'intervention.")
+        # seuls les bricoleurs à qui la demande a été envoyée (les plus proches) peuvent répondre
+        if not RequestDispatch.objects.filter(request=req, provider=profile).exists():
+            raise ValidationError(
+                "Cette demande a été envoyée aux bricoleurs les plus proches du client, pas à vous."
+            )
 
     @action(detail=True, methods=["post"])
     def withdraw(self, request, pk=None):
@@ -590,36 +610,18 @@ class ReviewReplyView(generics.GenericAPIView):
 # ==========================================================================
 #  Fiche prestataire publique
 # ==========================================================================
-def _int_param(request, name):
-    value = request.query_params.get(name)
-    if value in (None, ""):
-        return None
-    try:
-        return int(value)
-    except ValueError:
-        raise ValidationError({name: "Doit être un nombre entier."})
+class PublicProviderViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    """Fiche publique d'un prestataire validé (consultée depuis un devis reçu).
 
-
-class PublicProviderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    """Annuaire public des prestataires validés.
-
-    Filtres de la liste (tous facultatifs) :
-      ?category=<id>   métier (une famille inclut ses prestations)
-      ?wilaya=<id>     wilaya de base ou wilaya d'une commune d'intervention
-      ?commune=<id>    commune d'intervention (ou wilaya de base de cette commune)
-      ?available=1     seulement les prestataires disponibles
-      ?search=<texte>  nom, nom commercial, présentation
-      ?ordering=-rating_avg | -missions_count | -reviews_count
+    Pas de liste : le client ne choisit pas dans un annuaire, la demande part
+    automatiquement aux bricoleurs les plus proches (voir dispatch.py).
     """
 
     permission_classes = [AllowAny]
     serializer_class = ProviderPublicProfileSerializer
-    search_fields = ("user__full_name", "business_name", "bio")
-    ordering_fields = ("rating_avg", "missions_count", "reviews_count", "years_experience")
-    ordering = ("-is_available", "-rating_avg", "-reviews_count", "-missions_count", "id")
 
     def get_queryset(self):
-        qs = (
+        return (
             ProviderProfile.objects.filter(
                 verification_status=ProviderProfile.Verification.APPROVED,
                 user__is_active=True,
@@ -627,26 +629,6 @@ class PublicProviderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, vi
             .select_related("user", "base_wilaya")
             .prefetch_related("categories__category")
         )
-        if self.action != "list":
-            return qs
-
-        category = _int_param(self.request, "category")
-        if category is not None:
-            qs = qs.filter(Q(categories__category_id=category) | Q(categories__category__parent_id=category))
-
-        wilaya = _int_param(self.request, "wilaya")
-        if wilaya is not None:
-            qs = qs.filter(Q(base_wilaya_id=wilaya) | Q(service_communes__wilaya_id=wilaya))
-
-        commune = _int_param(self.request, "commune")
-        if commune is not None:
-            qs = qs.filter(Q(service_communes__id=commune) | Q(base_wilaya__communes__id=commune))
-
-        if self.request.query_params.get("available") in ("1", "true", "True"):
-            qs = qs.filter(is_available=True)
-
-        # les jointures ci-dessus peuvent dupliquer un prestataire
-        return qs.distinct()
 
     @action(detail=True, methods=["get"])
     def reviews(self, request, pk=None):

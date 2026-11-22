@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -32,6 +34,8 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
     photos = RequestPhotoSerializer(many=True, read_only=True)
     client_name = serializers.CharField(source="client.full_name", read_only=True)
     quotes_count = serializers.IntegerField(read_only=True, default=0)
+    # nombre de bricoleurs proches à qui la demande a été envoyée
+    dispatched_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = ServiceRequest
@@ -40,7 +44,7 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
             "address", "wilaya", "commune", "latitude", "longitude",
             "urgency", "budget_min", "budget_max",
             "status", "published_at", "expires_at", "created_at", "updated_at",
-            "photos", "quotes_count",
+            "photos", "quotes_count", "dispatched_count",
         )
         read_only_fields = (
             "status", "published_at", "expires_at", "created_at", "updated_at",
@@ -68,11 +72,15 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Fournir `address`, ou `wilaya` + `commune`.")
             if commune.wilaya_id != wilaya.id:
                 raise serializers.ValidationError({"commune": "Commune hors de la wilaya."})
-            attrs["_loc"] = {
-                "wilaya": wilaya, "commune": commune,
-                "latitude": init.get("latitude") or None,
-                "longitude": init.get("longitude") or None,
-            }
+            attrs["_loc"] = {"wilaya": wilaya, "commune": commune, "latitude": None, "longitude": None}
+
+        # position GPS du téléphone : prioritaire (c'est elle qui sert à trouver les plus proches)
+        lat = _coord(init.get("latitude"), 90, "latitude")
+        lng = _coord(init.get("longitude"), 180, "longitude")
+        if (lat is None) != (lng is None):
+            raise serializers.ValidationError("Fournir `latitude` et `longitude` ensemble.")
+        if lat is not None:
+            attrs.setdefault("_loc", {}).update(latitude=lat, longitude=lng)
 
         bmin, bmax = attrs.get("budget_min"), attrs.get("budget_max")
         if bmin is not None and bmax is not None and bmin > bmax:
@@ -90,6 +98,19 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         for field, value in loc.items():
             setattr(instance, field, value)
         return super().update(instance, validated_data)
+
+
+def _coord(value, limit, name):
+    """Coordonnée GPS facultative, arrondie à 6 décimales (~10 cm)."""
+    if value in (None, ""):
+        return None
+    try:
+        v = round(float(value), 6)
+    except (TypeError, ValueError):
+        raise serializers.ValidationError({name: "Coordonnée invalide."})
+    if not -limit <= v <= limit:
+        raise serializers.ValidationError({name: "Coordonnée hors limites."})
+    return Decimal(f"{v:.6f}")
 
 
 def _get_or_400(model, pk):
@@ -129,6 +150,7 @@ class ProviderSelfSerializer(serializers.ModelSerializer):
             "verification_status", "rating_avg", "reviews_count", "missions_count",
         )
         read_only_fields = ("verification_status", "rating_avg", "reviews_count", "missions_count")
+        extra_kwargs = {"radius_km": {"min_value": 1, "max_value": 100}}
 
 
 class ProviderPublicSerializer(serializers.ModelSerializer):
@@ -162,6 +184,9 @@ class RequestFeedSerializer(serializers.ModelSerializer):
         )
 
     def get_distance_km(self, obj):
+        sent = getattr(obj, "my_distance", None)  # distance calculée lors de l'envoi
+        if sent is not None:
+            return float(sent)
         prov = self.context.get("provider")
         if not prov:
             return None

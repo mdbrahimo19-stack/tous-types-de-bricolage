@@ -172,6 +172,13 @@ REQUEST_EXPIRY_DAYS = 7
 MAX_ACTIVE_REQUESTS_PER_CLIENT = 5
 QUOTE_VALIDITY_HOURS = 72
 
+# Envoi des demandes aux bricoleurs les plus proches (GPS), par vagues :
+# la 1re vague part aux N plus proches ; sans devis au bout de X minutes,
+# la demande passe aux N suivants (au plus DISPATCH_MAX_WAVES vagues).
+DISPATCH_BATCH_SIZE = int(os.environ.get("DISPATCH_BATCH_SIZE", 5))
+DISPATCH_WAVE_MINUTES = int(os.environ.get("DISPATCH_WAVE_MINUTES", 15))
+DISPATCH_MAX_WAVES = int(os.environ.get("DISPATCH_MAX_WAVES", 4))
+
 # --- IA (Claude / Anthropic) -------------------------------------
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "claude-opus-5-5")
