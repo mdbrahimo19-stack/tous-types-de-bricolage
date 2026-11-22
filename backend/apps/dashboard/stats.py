@@ -6,7 +6,10 @@ from django.db.models import Avg, Count, Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
+from django.conf import settings
+
 from apps.accounts.models import ProviderProfile, User
+from apps.billing.models import Payment, PointsAccount
 from apps.marketplace.models import AuditLog, Message, Mission, Quote, Review, ServiceRequest
 
 RECENT_LIMIT = 8
@@ -56,6 +59,11 @@ def key_figures(now):
         avg=Avg("rating"), n=Count("id")
     )
     acceptance = round(100 * quotes["accepted"] / quotes["total"]) if quotes["total"] else None
+    points = PointsAccount.objects.aggregate(
+        due=Sum("points_due"),
+        blocked=Count("id", filter=Q(points_due__gte=settings.POINTS_BLOCK_AT)),
+    )
+    cashed = Payment.objects.filter(status=Payment.Status.APPROVED).aggregate(total=Sum("amount_da"))
 
     return [
         {"label": "Clients", "value": users["clients"], "url": _changelist(User, is_client__exact=1)},
@@ -79,6 +87,13 @@ def key_figures(now):
             "hint": f"{reviews['n']} avis publiés",
             "url": _changelist(Review),
         },
+        {
+            "label": "Points à encaisser",
+            "value": _da((points["due"] or 0) * settings.POINT_VALUE_DA),
+            "hint": f"{points['blocked']} bricoleur(s) bloqué(s)",
+            "url": _changelist(PointsAccount),
+        },
+        {"label": "Encaissé (BaridiMob)", "value": _da(cashed["total"]), "url": _changelist(Payment)},
     ]
 
 
@@ -114,9 +129,21 @@ def todo(now):
         .select_related("commune", "category")
         .order_by("published_at")
     )
+    pending_payments = (
+        Payment.objects.filter(status=Payment.Status.PENDING)
+        .select_related("account__provider__user")
+        .order_by("created_at")
+    )
     local = timezone.localtime
 
     return [
+        _section(
+            "Paiements BaridiMob à vérifier",
+            pending_payments,
+            lambda p: f"{_da(p.amount_da)} — {p.account.provider} · envoyé le {local(p.created_at):%d/%m %H:%M}",
+            _changelist(Payment, status__exact="pending"),
+            "Aucun paiement en attente.",
+        ),
         _section(
             "Prestataires à vérifier",
             pending_providers,

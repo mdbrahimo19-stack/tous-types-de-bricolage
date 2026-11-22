@@ -7,6 +7,7 @@ import '../location.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
 import 'client.dart' show PriceEstimateCard;
+import 'points.dart';
 import 'shared.dart';
 
 // ==========================================================================
@@ -124,9 +125,37 @@ class _MissingGpsBannerState extends State<_MissingGpsBanner> {
       .get('/api/provider/me/')
       .then((p) => (p as Map)['latitude'] != null && p['longitude'] != null)
       .catchError((_) => true);
+  late final Future<bool> _blocked = context.api
+      .get('/api/provider/points/')
+      .then((p) => (p as Map)['blocked'] == true)
+      .catchError((_) => false);
 
   @override
   Widget build(BuildContext context) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      FutureBuilder<bool>(
+        future: _blocked,
+        builder: (context, snap) {
+          if (snap.data != true) return const SizedBox.shrink();
+          final scheme = Theme.of(context).colorScheme;
+          return Card(
+            color: scheme.errorContainer,
+            margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: ListTile(
+              leading: Icon(Icons.lock, color: scheme.onErrorContainer),
+              title: Text(context.tr('points_blocked'), style: TextStyle(color: scheme.onErrorContainer)),
+              subtitle: Text(context.tr('pay_title'), style: TextStyle(color: scheme.onErrorContainer)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PointsScreen())),
+            ),
+          );
+        },
+      ),
+      _gpsBanner(),
+    ]);
+  }
+
+  Widget _gpsBanner() {
     return FutureBuilder<bool>(
       future: _hasGps,
       builder: (context, snap) {

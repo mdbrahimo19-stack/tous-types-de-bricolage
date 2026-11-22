@@ -53,6 +53,7 @@ def _candidates(req):
         )
         .exclude(user_id=req.client_id)
         .exclude(dispatches__request=req)
+        .exclude(points__points_due__gte=settings.POINTS_BLOCK_AT)  # compte bloqué (paiement à faire)
         .select_related("user")
         .distinct()
     )

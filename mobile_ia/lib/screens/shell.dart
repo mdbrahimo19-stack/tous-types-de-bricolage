@@ -6,6 +6,7 @@ import '../l10n.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
 import 'client.dart';
+import 'points.dart';
 import 'provider.dart';
 import 'shared.dart';
 
@@ -108,6 +109,12 @@ class ProfileScreen extends StatelessWidget {
               title: Text(context.tr('provider_profile')),
               trailing: StatusChip(status: session.verificationStatus, prefix: 'vs'),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProviderSetupScreen())),
+            ),
+            ListTile(
+              leading: const Icon(Icons.toll_outlined),
+              title: Text(context.tr('points_title')),
+              subtitle: Text(context.tr('points_menu_sub')),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PointsScreen())),
             ),
           ] else
             ListTile(

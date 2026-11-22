@@ -22,6 +22,7 @@ from rest_framework.response import Response
 
 from apps.accounts.models import ProviderProfile, User
 from apps.ai import services as ai
+from apps.billing import services as billing
 from apps.catalog.models import ProviderCategory
 
 from .models import (
@@ -334,6 +335,8 @@ class QuoteViewSet(
 
     @staticmethod
     def _check_provider_can_serve(profile, req):
+        if billing.is_blocked(profile):
+            raise PermissionDenied(billing.blocked_message(billing.account_for(profile)))
         # seuls les bricoleurs à qui la demande a été envoyée (les plus proches) peuvent répondre
         if not RequestDispatch.objects.filter(request=req, provider=profile).exists():
             raise ValidationError(
@@ -381,6 +384,10 @@ class QuoteViewSet(
             )
             # Verrouille les conversations des prestataires non retenus (lecture seule).
             req.conversations.exclude(provider=quote.provider).update(is_locked=True)
+            # le client est contacté : 25 points pour le bricoleur retenu
+            profile = getattr(quote.provider, "provider_profile", None)
+            if profile is not None:
+                billing.charge_contact(profile, mission)
 
         notify(
             quote.provider, "quote_accepted", "Devis accepté",
