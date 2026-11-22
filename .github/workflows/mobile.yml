@@ -61,8 +61,14 @@ jobs:
             "$KS_PASS" "$KEY_PASS" "$KEY_ALIAS" > android/key.properties
 
       # APK optimisé pour les téléphones récents (arm64).
+      # Variable GitHub API_URL (ex. https://51-15-20-30.sslip.io) : adresse du serveur par défaut.
       - name: Build APK
-        run: flutter build apk --release --target-platform android-arm64
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          EXTRA=""
+          if [ -n "$API_URL" ]; then EXTRA="--dart-define=API_URL=$API_URL"; fi
+          flutter build apk --release --target-platform android-arm64 $EXTRA
 
       # Empreinte du certificat : doit être identique d'une compilation à l'autre.
       # (informatif : ne bloque jamais la publication)

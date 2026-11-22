@@ -185,8 +185,15 @@ AI_ENABLED = env_bool("AI_ENABLED", bool(ANTHROPIC_API_KEY)) and "test" not in s
 CSRF_COOKIE_NAME = "ttb_csrftoken"
 SESSION_COOKIE_NAME = "ttb_sessionid"
 
+# Origines HTTPS autorisées pour les formulaires (admin derrière Caddy), ex. https://api.exemple.dz
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
 # --- Sécurité prod ------------------------------------------------
 if not DEBUG:
+    # vérification de santé de Docker, lancée depuis le conteneur lui-même (http://localhost:8000)
+    if "localhost" not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append("localhost")
+    SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

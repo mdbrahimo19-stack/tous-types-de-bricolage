@@ -1,0 +1,22 @@
+# Caddy obtient et renouvelle tout seul le certificat HTTPS (Let's Encrypt) pour {$DOMAIN}.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# photos jusqu'à ~10 Mo
+	request_body {
+		max_size 12MB
+	}
+
+	# fichiers statiques (admin) et photos envoyées par les utilisateurs
+	handle_path /static/* {
+		root * /srv/static
+		file_server
+	}
+	handle_path /media/* {
+		root * /srv/media
+		file_server
+	}
+
+	# tout le reste : API + admin Django
+	reverse_proxy web:8000
+}
