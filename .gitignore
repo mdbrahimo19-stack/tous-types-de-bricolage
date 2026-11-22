@@ -13,6 +13,7 @@ db.sqlite3-journal
 /backend/media/
 /backend/staticfiles/
 /backend/.env
+/deploy/.env
 
 # OS / editors
 .DS_Store

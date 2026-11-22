@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- position GPS : la demande est envoyée aux bricoleurs les plus proches -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- usesCleartextTraffic : nécessaire en dev (Django en http://). À retirer en prod (HTTPS). -->
     <application
         android:label="Bricolage DZ"

@@ -4,6 +4,7 @@ from rest_framework.test import APIClient
 from apps.accounts.models import ClientProfile, ProviderProfile, User
 from apps.catalog.models import Category, ProviderCategory
 from apps.locations.models import Commune, Wilaya
+from apps.marketplace.dispatch import send_wave
 from apps.marketplace.models import Mission, Quote, ServiceRequest
 
 
@@ -181,14 +182,16 @@ class FeedQuoteMissionTests(TestCase):
             urgency=urgency,
         )
         r.publish()
+        send_wave(r)  # comme à la publication via l'API
         return r
 
-    def test_feed_matches_category_and_commune_only(self):
+    def test_feed_shows_only_requests_sent_to_provider(self):
+        prov_user, _ = make_provider("+213770000001", self.plomberie, [self.kouba], lat="36.73", lng="3.10")
         self._publish_request(category=self.plomberie, commune=self.kouba)
         self._publish_request(category=self.peinture, commune=self.kouba)   # mauvaise catégorie
-        self._publish_request(category=self.plomberie, commune=self.rouiba)  # mauvaise commune
+        # à ~200 km : hors du rayon (10 km) et hors de ses communes
+        self._publish_request(category=self.plomberie, commune=self.rouiba, lat="36.0", lng="1.0")
 
-        prov_user, _ = make_provider("+213770000001", self.plomberie, [self.kouba], lat="36.73", lng="3.10")
         pc = APIClient()
         pc.force_authenticate(prov_user)
         resp = pc.get("/api/feed/")
@@ -204,9 +207,9 @@ class FeedQuoteMissionTests(TestCase):
         self.assertEqual(pc.get("/api/feed/").status_code, 403)
 
     def test_quote_flow_and_acceptance_creates_mission(self):
-        req = self._publish_request()
         p1_user, _ = make_provider("+213770000003", self.plomberie, [self.kouba])
         p2_user, _ = make_provider("+213770000004", self.plomberie, [self.kouba])
+        req = self._publish_request()
         pc1, pc2 = APIClient(), APIClient()
         pc1.force_authenticate(p1_user)
         pc2.force_authenticate(p2_user)
@@ -244,15 +247,15 @@ class FeedQuoteMissionTests(TestCase):
         self.assertEqual(Quote.objects.get(pk=q2.data["id"]).status, "rejected")
         self.assertEqual(Mission.objects.count(), 1)
 
-    def test_quote_rejected_when_out_of_zone(self):
-        req = self._publish_request(commune=self.rouiba)
-        prov_user, _ = make_provider("+213770000005", self.plomberie, [self.kouba])
+    def test_quote_rejected_when_request_not_sent_to_provider(self):
+        prov_user, _ = make_provider("+213770000005", self.plomberie, [self.kouba], lat="36.73", lng="3.10")
+        req = self._publish_request(commune=self.rouiba, lat="36.0", lng="1.0")  # trop loin
         pc = APIClient()
         pc.force_authenticate(prov_user)
         resp = pc.post("/api/quotes/", {"request": req.id, "amount": "3000", "lead_time_days": 1},
                        format="json")
         self.assertEqual(resp.status_code, 400)
-        self.assertIn("zone", str(resp.data))
+        self.assertIn("plus proches", str(resp.data))
 
     def test_provider_category_limit(self):
         prov_user, _ = make_provider("+213770000006", self.plomberie, [self.kouba])
@@ -291,6 +294,7 @@ class MessagingTests(TestCase):
             description="d", wilaya=self.wilaya, commune=self.kouba, urgency="today",
         )
         self.req.publish()
+        send_wave(self.req)
         self.quote = self.pc.post(
             "/api/quotes/", {"request": self.req.id, "amount": "3000", "lead_time_days": 1}, format="json"
         )
@@ -327,6 +331,7 @@ class MessagingTests(TestCase):
 
     def test_losing_provider_conversation_is_locked(self):
         p2, _ = make_provider("+213770999888", self.plomberie, [self.kouba])
+        send_wave(self.req)  # vague suivante : p2 reçoit la demande
         pc2 = APIClient(); pc2.force_authenticate(p2)
         q2 = pc2.post("/api/quotes/", {"request": self.req.id, "amount": "5000", "lead_time_days": 3}, format="json")
         self.cc.post(f"/api/quotes/{self.quote.data['id']}/accept/")  # accepte le 1er presta
@@ -374,6 +379,7 @@ class MissionLifecycleTests(TestCase):
             description="d", wilaya=self.wilaya, commune=self.kouba, urgency="today",
         )
         req.publish()
+        send_wave(req)
         q = self.pc.post("/api/quotes/", {"request": req.id, "amount": "4000", "lead_time_days": 1}, format="json")
         self.mission_id = self.cc.post(f"/api/quotes/{q.data['id']}/accept/").data["id"]
 

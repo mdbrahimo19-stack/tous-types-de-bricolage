@@ -79,6 +79,32 @@ class ServiceRequest(models.Model):
         return self.status in self.ACTIVE_STATUSES
 
 
+class RequestDispatch(models.Model):
+    """Un bricoleur à qui la demande a été envoyée (le plus proche d'abord, par vagues)."""
+
+    request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE, related_name="dispatches")
+    provider = models.ForeignKey(
+        "accounts.ProviderProfile", on_delete=models.CASCADE, related_name="dispatches"
+    )
+    wave = models.PositiveSmallIntegerField(_("vague"), default=1)
+    distance_km = models.DecimalField(
+        _("distance (km)"), max_digits=6, decimal_places=1, null=True, blank=True,
+        help_text=_("Vide si la position GPS manque : envoi selon la commune."),
+    )
+    sent_at = models.DateTimeField(_("envoyée le"), default=timezone.now)
+
+    class Meta:
+        verbose_name = _("envoi à un bricoleur")
+        verbose_name_plural = _("envois aux bricoleurs")
+        ordering = ("wave", "distance_km")
+        constraints = [
+            models.UniqueConstraint(fields=["request", "provider"], name="uniq_envoi_par_prestataire"),
+        ]
+
+    def __str__(self):
+        return f"Demande {self.request_id} → {self.provider_id} (vague {self.wave})"
+
+
 class RequestPhoto(models.Model):
     request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE, related_name="photos")
     image = models.ImageField(upload_to="requests/%Y/%m/")

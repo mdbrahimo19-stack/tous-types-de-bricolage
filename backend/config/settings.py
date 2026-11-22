@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.locations",
     "apps.marketplace",
+    "apps.billing",
     "apps.ai",
     "apps.dashboard",
 ]
@@ -172,6 +173,35 @@ REQUEST_EXPIRY_DAYS = 7
 MAX_ACTIVE_REQUESTS_PER_CLIENT = 5
 QUOTE_VALIDITY_HOURS = 72
 
+# Envoi des demandes aux bricoleurs les plus proches (GPS), par vagues :
+# la 1re vague part aux N plus proches ; sans devis au bout de X minutes,
+# la demande passe aux N suivants (au plus DISPATCH_MAX_WAVES vagues).
+DISPATCH_BATCH_SIZE = int(os.environ.get("DISPATCH_BATCH_SIZE", 5))
+DISPATCH_WAVE_MINUTES = int(os.environ.get("DISPATCH_WAVE_MINUTES", 15))
+DISPATCH_MAX_WAVES = int(os.environ.get("DISPATCH_MAX_WAVES", 4))
+
+# Points des bricoleurs : chaque client qui accepte un devis coûte 25 points (1 point = 10 DA).
+# 50 points offerts à l'inscription ; à 200 points dus (2 000 DA) le compte est bloqué
+# jusqu'au paiement BaridiMob validé par l'administrateur.
+POINTS_PER_CONTACT = int(os.environ.get("POINTS_PER_CONTACT", 25))
+POINT_VALUE_DA = int(os.environ.get("POINT_VALUE_DA", 10))
+POINTS_WELCOME_FREE = int(os.environ.get("POINTS_WELCOME_FREE", 50))
+POINTS_BLOCK_AT = int(os.environ.get("POINTS_BLOCK_AT", 200))
+# Compte BaridiMob qui reçoit les paiements (affiché aux bricoleurs dans l'app)
+BARIDIMOB_RIP = os.environ.get("BARIDIMOB_RIP", "")
+BARIDIMOB_NAME = os.environ.get("BARIDIMOB_NAME", "")
+# Adresse qui reçoit un email à chaque capture de paiement envoyée
+PAYMENTS_NOTIFY_EMAIL = os.environ.get("PAYMENTS_NOTIFY_EMAIL", "")
+
+# --- Email (console en dev : les emails s'affichent dans le terminal) ---
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@localhost")
+
 # --- IA (Claude / Anthropic) -------------------------------------
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "claude-opus-5-5")
@@ -185,8 +215,15 @@ AI_ENABLED = env_bool("AI_ENABLED", bool(ANTHROPIC_API_KEY)) and "test" not in s
 CSRF_COOKIE_NAME = "ttb_csrftoken"
 SESSION_COOKIE_NAME = "ttb_sessionid"
 
+# Origines HTTPS autorisées pour les formulaires (admin derrière Caddy), ex. https://api.exemple.dz
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
 # --- Sécurité prod ------------------------------------------------
 if not DEBUG:
+    # vérification de santé de Docker, lancée depuis le conteneur lui-même (http://localhost:8000)
+    if "localhost" not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append("localhost")
+    SECURE_REDIRECT_EXEMPT = [r"^api/health/$"]
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
