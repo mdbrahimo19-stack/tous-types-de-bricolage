@@ -75,7 +75,7 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
         return (
             ServiceRequest.objects
             .filter(client=self.request.user)
-            .select_related("category", "wilaya", "commune", "address")
+            .select_related("category", "wilaya", "commune", "address", "target_provider__user")
             .prefetch_related("photos")
             .annotate(quotes_count=Count("quotes"))
             .order_by("-created_at")
@@ -113,11 +113,30 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
         if not instance.photos.exists() and not instance.description:
             raise ValidationError("Ajoutez au moins une description ou une photo avant de publier.")
         instance.publish()
+        if instance.target_provider_id:
+            # demande ciblée : on prévient directement le professionnel choisi
+            notify(
+                instance.target_provider.user, "request_targeted", "Une demande de devis pour vous",
+                f"{instance.client.full_name or 'Un client'} vous demande un devis : « {instance.title} ».",
+                data={"request_id": instance.id},
+            )
 
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
         instance = self.get_object()
         self._publish(instance)
+        return Response(self.get_serializer(instance).data)
+
+    @action(detail=True, methods=["post"])
+    def open_to_all(self, request, pk=None):
+        """Demande ciblée -> ouverte à tous les pros du métier et de la zone."""
+        instance = self.get_object()
+        if instance.target_provider_id is None:
+            raise ValidationError("Cette demande est déjà ouverte à tous les professionnels.")
+        if instance.status not in {DRAFT, ServiceRequest.Status.PUBLISHED, ServiceRequest.Status.QUOTES_RECEIVED}:
+            raise ValidationError("Cette demande n'accepte plus de devis.")
+        instance.target_provider = None
+        instance.save(update_fields=["target_provider", "updated_at"])
         return Response(self.get_serializer(instance).data)
 
     @action(detail=True, methods=["post"])
@@ -223,11 +242,13 @@ class RequestFeedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         profile = self._profile()
         cat_ids = list(profile.categories.values_list("category_id", flat=True))
         commune_ids = list(profile.service_communes.values_list("id", flat=True))
+        # demandes ouvertes de mon métier et de ma zone + celles qui me sont adressées
+        open_to_me = Q(target_provider__isnull=True, category_id__in=cat_ids, commune_id__in=commune_ids)
+        targeted_to_me = Q(target_provider=profile)
         return (
             ServiceRequest.objects.filter(
+                open_to_me | targeted_to_me,
                 status__in=[ServiceRequest.Status.PUBLISHED, ServiceRequest.Status.QUOTES_RECEIVED],
-                category_id__in=cat_ids,
-                commune_id__in=commune_ids,
             )
             .exclude(client=self.request.user)
             .select_related("category", "commune", "wilaya")
@@ -315,6 +336,11 @@ class QuoteViewSet(
 
     @staticmethod
     def _check_provider_can_serve(profile, req):
+        if req.target_provider_id:
+            # demande ciblée : seul le pro choisi répond, même hors de sa zone habituelle
+            if req.target_provider_id != profile.id:
+                raise ValidationError("Cette demande est réservée à un autre professionnel.")
+            return
         if not profile.categories.filter(category_id=req.category_id).exists():
             raise ValidationError("Cette demande n'est pas dans vos catégories.")
         if not profile.service_communes.filter(id=req.commune_id).exists():

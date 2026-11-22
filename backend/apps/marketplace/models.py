@@ -50,6 +50,13 @@ class ServiceRequest(models.Model):
     budget_min = models.DecimalField(_("budget min (DA)"), max_digits=10, decimal_places=2, null=True, blank=True)
     budget_max = models.DecimalField(_("budget max (DA)"), max_digits=10, decimal_places=2, null=True, blank=True)
 
+    # Demande adressée à un seul professionnel (choisi dans l'annuaire) : lui seul la voit
+    # et peut y répondre. Vide = demande ouverte à tous les pros du métier et de la zone.
+    target_provider = models.ForeignKey(
+        "accounts.ProviderProfile", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="targeted_requests", verbose_name=_("professionnel ciblé"),
+    )
+
     status = models.CharField(_("statut"), max_length=16, choices=Status.choices, default=Status.DRAFT)
     published_at = models.DateTimeField(_("date de publication"), null=True, blank=True)
     expires_at = models.DateTimeField(_("date d'expiration"), null=True, blank=True)

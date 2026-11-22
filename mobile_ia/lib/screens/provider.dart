@@ -70,6 +70,16 @@ class FeedScreen extends StatelessWidget {
                                 child: Text('${r['title']}',
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               ),
+                              if (r['for_me'] == true)
+                                Padding(
+                                  padding: const EdgeInsetsDirectional.only(start: 6),
+                                  child: Chip(
+                                    avatar: const Icon(Icons.person_pin, size: 18),
+                                    label: Text(context.tr('for_you')),
+                                    visualDensity: VisualDensity.compact,
+                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                  ),
+                                ),
                               if (r['already_quoted'] == true)
                                 Chip(
                                   label: Text(context.tr('already_quoted')),

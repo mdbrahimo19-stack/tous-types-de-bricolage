@@ -1,3 +1,4 @@
+from django.db import models
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -32,6 +33,15 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
     photos = RequestPhotoSerializer(many=True, read_only=True)
     client_name = serializers.CharField(source="client.full_name", read_only=True)
     quotes_count = serializers.IntegerField(read_only=True, default=0)
+    # id du ProviderProfile (celui de l'annuaire) ; vide = demande ouverte à tous
+    target_provider = serializers.PrimaryKeyRelatedField(
+        queryset=ProviderProfile.objects.filter(
+            verification_status=ProviderProfile.Verification.APPROVED, user__is_active=True
+        ),
+        required=False,
+        allow_null=True,
+    )
+    target_provider_detail = serializers.SerializerMethodField()
 
     class Meta:
         model = ServiceRequest
@@ -40,17 +50,28 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
             "address", "wilaya", "commune", "latitude", "longitude",
             "urgency", "budget_min", "budget_max",
             "status", "published_at", "expires_at", "created_at", "updated_at",
-            "photos", "quotes_count",
+            "photos", "quotes_count", "target_provider", "target_provider_detail",
         )
         read_only_fields = (
             "status", "published_at", "expires_at", "created_at", "updated_at",
             "wilaya", "commune", "latitude", "longitude",
         )
 
+    def get_target_provider_detail(self, obj):
+        p = obj.target_provider
+        if p is None:
+            return None
+        return {"id": p.id, "name": p.business_name or p.user.full_name}
+
     def validate_address(self, address):
         if address is not None and address.user_id != self.context["request"].user.id:
             raise serializers.ValidationError("Adresse inconnue.")
         return address
+
+    def validate_target_provider(self, profile):
+        if profile is not None and profile.user_id == self.context["request"].user.id:
+            raise serializers.ValidationError("Vous ne pouvez pas vous adresser une demande.")
+        return profile
 
     def validate(self, attrs):
         address = attrs.get("address") or getattr(self.instance, "address", None)
@@ -77,6 +98,18 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         bmin, bmax = attrs.get("budget_min"), attrs.get("budget_max")
         if bmin is not None and bmax is not None and bmin > bmax:
             raise serializers.ValidationError({"budget_max": "Le budget max doit être ≥ au budget min."})
+
+        # demande ciblée : le métier demandé doit faire partie de ceux du professionnel
+        target = attrs.get("target_provider", getattr(self.instance, "target_provider", None))
+        category = attrs.get("category") or getattr(self.instance, "category", None)
+        if target is not None and category is not None:
+            offered = target.categories.filter(
+                models.Q(category_id=category.id) | models.Q(category_id=category.parent_id)
+            ).exists()
+            if not offered:
+                raise serializers.ValidationError(
+                    {"target_provider": "Ce professionnel ne propose pas ce métier."}
+                )
         return attrs
 
     def create(self, validated_data):
@@ -152,14 +185,19 @@ class RequestFeedSerializer(serializers.ModelSerializer):
     photos = RequestPhotoSerializer(many=True, read_only=True)
     distance_km = serializers.SerializerMethodField()
     already_quoted = serializers.SerializerMethodField()
+    for_me = serializers.SerializerMethodField()  # demande adressée à ce pro (annuaire)
 
     class Meta:
         model = ServiceRequest
         fields = (
             "id", "category", "category_detail", "title", "description",
             "wilaya_name", "commune_name", "urgency", "budget_min", "budget_max",
-            "status", "published_at", "photos", "distance_km", "already_quoted",
+            "status", "published_at", "photos", "distance_km", "already_quoted", "for_me",
         )
+
+    def get_for_me(self, obj):
+        prov = self.context.get("provider")
+        return bool(prov and obj.target_provider_id == prov.id)
 
     def get_distance_km(self, obj):
         prov = self.context.get("provider")

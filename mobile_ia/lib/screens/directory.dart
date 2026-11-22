@@ -393,6 +393,8 @@ class ProviderDetailScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => RequestFormScreen(
           initialCategory: chosen == null ? null : {'id': chosen['id'], 'name_fr': chosen['name_fr'], 'name_ar': chosen['name_ar']},
+          // demande adressée à ce professionnel uniquement
+          targetProvider: {'id': p['id'], 'name': providerName(p)},
         ),
       ),
     );

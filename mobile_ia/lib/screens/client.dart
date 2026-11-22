@@ -227,11 +227,20 @@ class _DescribeProblemScreenState extends State<DescribeProblemScreen> {
 //  Formulaire de demande (pré-rempli par l'IA ou vide)
 // ==========================================================================
 class RequestFormScreen extends StatefulWidget {
-  const RequestFormScreen({super.key, this.draft, this.initialCategory, this.initialDescription});
+  const RequestFormScreen({
+    super.key,
+    this.draft,
+    this.initialCategory,
+    this.initialDescription,
+    this.targetProvider,
+  });
 
   final Json? draft;
   final Json? initialCategory;
   final String? initialDescription;
+
+  /// Professionnel choisi dans l'annuaire ({id, name}) : la demande ne sera envoyée qu'à lui.
+  final Json? targetProvider;
 
   @override
   State<RequestFormScreen> createState() => _RequestFormScreenState();
@@ -253,10 +262,12 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
   Json? _estimate;
   bool _estimating = false;
   bool _submitting = false;
+  Json? _target;
 
   @override
   void initState() {
     super.initState();
+    _target = widget.targetProvider;
     _category = widget.initialCategory;
     _description.text = widget.initialDescription ?? '';
     final d = widget.draft;
@@ -338,6 +349,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         'urgency': _urgency,
         if (toNum(_budgetMin.text) != null) 'budget_min': toNum(_budgetMin.text),
         if (toNum(_budgetMax.text) != null) 'budget_max': toNum(_budgetMax.text),
+        if (_target != null) 'target_provider': _target!['id'],
         'publish_now': true,
       }) as Map;
       final id = created['id'] as int;
@@ -368,6 +380,20 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (_target != null)
+              Card(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: ListTile(
+                  leading: const Icon(Icons.person_pin),
+                  title: Text(context.tr('target_only', {'name': _target!['name']})),
+                  subtitle: Text(context.tr('target_only_sub')),
+                  trailing: IconButton(
+                    tooltip: context.tr('open_to_all'),
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _target = null),
+                  ),
+                ),
+              ),
             if (widget.draft != null)
               Card(
                 color: Theme.of(context).colorScheme.secondaryContainer,
@@ -709,6 +735,37 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                         child: NetImage(p['image'] as String?),
                       ),
                   ]),
+                ),
+              ],
+              if (r['target_provider_detail'] != null) ...[
+                const SizedBox(height: 12),
+                Card(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        const Icon(Icons.person_pin),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            context.tr('target_reserved', {'name': (r['target_provider_detail'] as Map)['name']}),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ]),
+                      if (open) ...[
+                        const SizedBox(height: 6),
+                        Text(context.tr('target_reserved_sub')),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.groups),
+                          label: Text(context.tr('open_to_all')),
+                          onPressed: () => _requestAction('open_to_all', confirmKey: 'open_to_all_confirm'),
+                        ),
+                      ],
+                    ]),
+                  ),
                 ),
               ],
               const SizedBox(height: 12),
