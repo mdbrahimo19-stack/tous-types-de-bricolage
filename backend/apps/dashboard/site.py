@@ -4,8 +4,8 @@ from .stats import build_dashboard
 
 
 class TTBAdminSite(AdminSite):
-    site_header = "Tous Types de Bricolages — Administration"
-    site_title = "TTB Admin"
+    site_header = "BRICOOL — Administration"
+    site_title = "BRICOOL Admin"
     index_title = "Tableau de bord"
     index_template = "admin/ttb_dashboard.html"
 

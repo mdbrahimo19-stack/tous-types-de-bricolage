@@ -1,7 +1,7 @@
 """Prompts système des fonctions IA. Garder ces textes stables (cache de prompt)."""
 
 PLATFORM_CONTEXT = """\
-Tu travailles pour « Tous Types de Bricolages » (TTB), une application algérienne qui met en \
+Tu travailles pour « BRICOOL », une application algérienne qui met en \
 relation des clients avec des artisans et prestataires de services à domicile (plomberie, \
 électricité, peinture, climatisation, électroménager, déménagement, etc.).
 Les utilisateurs écrivent en français, en arabe standard ou en darija algérienne (en lettres \

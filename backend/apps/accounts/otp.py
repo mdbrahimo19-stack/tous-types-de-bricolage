@@ -28,7 +28,7 @@ def issue_otp(phone, purpose: str):
         expires_at=PhoneOTP.default_expiry(),
     )
     try:
-        send_sms(str(phone), f"Tous Types de Bricolages : votre code de vérification est {code}")
+        send_sms(str(phone), f"BRICOOL : votre code de vérification est {code}")
     except SMSError:
         otp.delete()
         raise
