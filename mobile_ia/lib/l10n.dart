@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 /// Textes de l'interface en français et en arabe (l'arabe active automatiquement le RTL).
 const Map<String, Map<String, String>> _strings = {
   'fr': {
-    'app_name': 'Tous Types de Bricolages',
+    'app_name': 'BRICOOL',
     'ok': 'OK',
     'cancel': 'Annuler',
     'retry': 'Réessayer',
@@ -272,7 +272,7 @@ const Map<String, Map<String, String>> _strings = {
     'vs_rejected': 'Refusé',
   },
   'ar': {
-    'app_name': 'كل أنواع الأشغال',
+    'app_name': 'BRICOOL',
     'ok': 'حسناً',
     'cancel': 'إلغاء',
     'retry': 'إعادة المحاولة',

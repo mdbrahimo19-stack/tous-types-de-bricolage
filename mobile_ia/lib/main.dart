@@ -27,7 +27,7 @@ class TtbApp extends StatelessWidget {
     final session = context.watch<Session>();
     const seed = Color(0xFFE8740C); // orange « chantier »
     return MaterialApp(
-      title: 'Tous Types de Bricolages',
+      title: 'BRICOOL',
       debugShowCheckedModeBanner: false,
       locale: Locale(session.locale),
       supportedLocales: const [Locale('fr'), Locale('ar')],
