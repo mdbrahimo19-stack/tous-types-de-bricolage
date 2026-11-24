@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
+import '../flavor.dart';
 
-/// Session utilisateur : compte connecté, langue, mode client / prestataire.
+/// Session utilisateur : compte connecté et langue.
+/// Le rôle (client / artisan) dépend de l'application installée : BRICOOL ou BRICOOL Pro.
 class Session extends ChangeNotifier {
   Session(this.api) {
     api.onSessionExpired = _onExpired;
@@ -14,12 +16,10 @@ class Session extends ChangeNotifier {
   final ApiClient api;
 
   static const _kLocale = 'locale';
-  static const _kProviderMode = 'provider_mode';
   static const _kUserCache = 'user_cache';
 
   Json? user;
   String locale = 'fr';
-  bool providerMode = false;
   bool ready = false;
 
   bool get loggedIn => user != null;
@@ -29,14 +29,13 @@ class Session extends ChangeNotifier {
   Json? get providerProfile => (user?['provider_profile'] as Map?)?.cast<String, dynamic>();
   String get verificationStatus => (providerProfile?['verification_status'] as String?) ?? 'pending';
 
-  /// Mode prestataire effectif (seulement si le compte est prestataire).
-  bool get asProvider => providerMode && isProvider;
+  /// Écrans artisan dans BRICOOL Pro, écrans client dans BRICOOL.
+  bool get asProvider => AppFlavor.isPro;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     locale = prefs.getString(_kLocale) ??
         (PlatformDispatcher.instance.locale.languageCode == 'ar' ? 'ar' : 'fr');
-    providerMode = prefs.getBool(_kProviderMode) ?? false;
 
     await api.loadTokens();
     if (api.hasSession) {
@@ -68,15 +67,15 @@ class Session extends ChangeNotifier {
     required String code,
     required String purpose,
     String fullName = '',
-    bool asProvider = false,
   }) async {
     final data = await api.post('/api/auth/otp/verify/', {
       'phone': phone,
       'code': code,
       'purpose': purpose,
+      // BRICOOL Pro : le compte devient artisan (même s'il existait déjà comme client)
+      'as_provider': AppFlavor.isPro,
       if (purpose == 'registration') ...{
         'full_name': fullName,
-        'as_provider': asProvider,
         'language': locale,
       },
     }) as Map;
@@ -85,7 +84,6 @@ class Session extends ChangeNotifier {
     user = (data['user'] as Map).cast<String, dynamic>();
     final serverLang = user!['language'] as String?;
     if (serverLang == 'fr' || serverLang == 'ar') locale = serverLang!;
-    providerMode = isProvider; // un artisan arrive directement sur ses travaux
     await _savePrefs();
     await _cacheUser();
     notifyListeners();
@@ -108,12 +106,6 @@ class Session extends ChangeNotifier {
         // la préférence locale suffit ; le serveur sera mis à jour plus tard
       }
     }
-  }
-
-  Future<void> setProviderMode(bool value) async {
-    providerMode = value;
-    await _savePrefs();
-    notifyListeners();
   }
 
   Future<void> logout() async {
@@ -141,7 +133,6 @@ class Session extends ChangeNotifier {
   Future<void> _savePrefs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kLocale, locale);
-    await prefs.setBool(_kProviderMode, providerMode);
   }
 
   Future<void> _cacheUser() async {

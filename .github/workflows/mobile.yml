@@ -1,6 +1,7 @@
 name: App mobile (Flutter)
 
-# Compile l'application unique client + professionnel (dossier mobile_ia/).
+# Compile les deux applications (dossier mobile_ia/) :
+#   BRICOOL (clients, --flavor client) et BRICOOL Pro (artisans, --flavor pro).
 on:
   push:
     paths:
@@ -62,13 +63,16 @@ jobs:
 
       # APK optimisé pour les téléphones récents (arm64).
       # Variable GitHub API_URL (ex. https://51-15-20-30.sslip.io) : adresse du serveur par défaut.
-      - name: Build APK
+      - name: Build APK (BRICOOL + BRICOOL Pro)
         env:
           API_URL: ${{ vars.API_URL }}
         run: |
           EXTRA=""
           if [ -n "$API_URL" ]; then EXTRA="--dart-define=API_URL=$API_URL"; fi
-          flutter build apk --release --target-platform android-arm64 $EXTRA
+          flutter build apk --release --flavor client --target-platform android-arm64 $EXTRA
+          flutter build apk --release --flavor pro --target-platform android-arm64 $EXTRA
+          cp build/app/outputs/flutter-apk/app-client-release.apk bricool.apk
+          cp build/app/outputs/flutter-apk/app-pro-release.apk bricool-pro.apk
 
       # Empreinte du certificat : doit être identique d'une compilation à l'autre.
       # (informatif : ne bloque jamais la publication)
@@ -76,23 +80,24 @@ jobs:
         continue-on-error: true
         run: |
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk | grep -E 'DN:|SHA-256'
+          "$APKSIGNER" verify --print-certs bricool.apk | grep -E 'DN:|SHA-256'
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ttb-apk
-          path: mobile_ia/build/app/outputs/flutter-apk/app-release.apk
+          name: bricool-apk
+          path: |
+            mobile_ia/bricool.apk
+            mobile_ia/bricool-pro.apk
           retention-days: 14
 
-      # APK téléchargeable directement depuis le téléphone (onglet Releases).
-      - name: Publier l'APK dans la release « apk-test »
+      # APK téléchargeables directement depuis le téléphone (onglet Releases).
+      - name: Publier les APK dans la release « apk-test »
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk bricolages-test.apk
-          NOTES="APK de test (client + professionnel) — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
+          NOTES="bricool.apk = app des clients · bricool-pro.apk = app des artisans — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
           gh release delete apk-test --yes --cleanup-tag 2>/dev/null || true
-          gh release create apk-test bricolages-test.apk \
+          gh release create apk-test bricool.apk bricool-pro.apk \
             --prerelease --target "$GITHUB_SHA" \
             --title "APK de test (dernière compilation)" --notes "$NOTES"

@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- usesCleartextTraffic : nécessaire en dev (Django en http://). À retirer en prod (HTTPS). -->
     <application
-        android:label="BRICOOL"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

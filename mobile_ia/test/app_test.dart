@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttb_mobile/api/api_client.dart';
+import 'package:ttb_mobile/flavor.dart';
 import 'package:ttb_mobile/main.dart';
 import 'package:ttb_mobile/state/session.dart';
 import 'package:ttb_mobile/widgets/floating_services.dart';
@@ -99,6 +100,35 @@ void main() {
     await tester.enterText(field, '0661234567');
     await tester.pump();
     expect(find.text('0661234567'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('deux applications : BRICOOL (client) et BRICOOL Pro (artisan)', (
+    tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = _NoAnimations();
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    addTearDown(() => AppFlavor.debugOverride = null);
+    SharedPreferences.setMockInitialValues({});
+
+    // app client (par défaut)
+    final client = Session(ApiClient());
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(value: client, child: const TtbApp()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('BRICOOL'), findsOneWidget);
+    expect(client.asProvider, isFalse);
+
+    // app artisan
+    AppFlavor.debugOverride = 'pro';
+    final pro = Session(ApiClient());
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(value: pro, child: const TtbApp(key: ValueKey('pro'))),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('BRICOOL Pro'), findsOneWidget);
+    expect(pro.asProvider, isTrue);
     expect(tester.takeException(), isNull);
   });
 

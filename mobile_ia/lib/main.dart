@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'api/api_client.dart';
 import 'config.dart';
+import 'flavor.dart';
 import 'screens/auth.dart';
 import 'screens/shell.dart';
 import 'state/session.dart';
@@ -25,9 +26,9 @@ class TtbApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<Session>();
-    const seed = Color(0xFFE8740C); // orange « chantier »
+    final seed = AppFlavor.seed; // orange (BRICOOL) ou bleu nuit (BRICOOL Pro)
     return MaterialApp(
-      title: 'BRICOOL',
+      title: AppFlavor.name,
       debugShowCheckedModeBanner: false,
       locale: Locale(session.locale),
       supportedLocales: const [Locale('fr'), Locale('ar')],
