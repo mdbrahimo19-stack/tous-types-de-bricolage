@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_client.dart';
@@ -7,6 +10,7 @@ import '../l10n.dart';
 import '../location.dart';
 import '../state/session.dart';
 import '../theme.dart';
+import '../widgets/avatar.dart';
 import '../widgets/common.dart';
 import 'client.dart' show PriceEstimateCard;
 import 'points.dart';
@@ -321,6 +325,81 @@ class _FeedCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Photo de l'artisan (vue par les clients sur ses devis) + bouton pour la changer.
+class _MyPhoto extends StatefulWidget {
+  const _MyPhoto();
+
+  @override
+  State<_MyPhoto> createState() => _MyPhotoState();
+}
+
+class _MyPhotoState extends State<_MyPhoto> {
+  bool _busy = false;
+
+  Future<void> _change() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.photo_camera_outlined),
+            title: Text(ctx.tr('photo_camera')),
+            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined),
+            title: Text(ctx.tr('photo_gallery')),
+            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+          ),
+        ]),
+      ),
+    );
+    if (source == null || !mounted) return;
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 900,
+      imageQuality: 85,
+      preferredCameraDevice: CameraDevice.front,
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _busy = true);
+    final session = context.read<Session>();
+    final ok = await runAction(context, () async {
+      await context.api.upload('/api/auth/me/photo/', fileField: 'photo', file: File(picked.path));
+      await session.refreshUser();
+    });
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) showInfo(context, context.tr('photo_saved'));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.watch<Session>();
+    final user = session.user ?? const {};
+    final p = AppPalette.current;
+    return Column(children: [
+      PersonAvatar(
+        name: '${user['full_name'] ?? ''}',
+        photoUrl: user['photo'] as String?,
+        size: 96,
+        verified: session.verificationStatus == 'approved',
+      ),
+      const SizedBox(height: 8),
+      _busy
+          ? const Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator())
+          : TextButton.icon(
+              onPressed: _change,
+              icon: const Icon(Icons.add_a_photo_outlined),
+              label: Text(context.tr(user['photo'] == null ? 'photo_add' : 'photo_change')),
+            ),
+      Text(context.tr('photo_hint'),
+          textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: p.muted)),
+    ]);
   }
 }
 
@@ -803,6 +882,8 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                const _MyPhoto(),
+                const SizedBox(height: 8),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.verified_user_outlined),

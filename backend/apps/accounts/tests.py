@@ -100,6 +100,43 @@ class OTPAuthFlowTests(TestCase):
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertFalse(resp.data["user"]["is_provider"])
 
+    def test_photo_upload_and_delete(self):
+        import io
+        import shutil
+        import tempfile
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+
+        media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media, ignore_errors=True)
+        buf = io.BytesIO()
+        Image.new("RGB", (40, 40), (200, 90, 10)).save(buf, format="PNG")
+        user = User.objects.create_user(phone=PHONE, full_name="Ahmed", phone_verified=True)
+        self.client.force_authenticate(user)
+
+        with self.settings(MEDIA_ROOT=media):
+            self.assertEqual(self.client.post("/api/auth/me/photo/", {}, format="multipart").status_code, 400)
+            photo = SimpleUploadedFile("moi.png", buf.getvalue(), content_type="image/png")
+            resp = self.client.post("/api/auth/me/photo/", {"photo": photo}, format="multipart")
+            self.assertEqual(resp.status_code, 200, resp.content)
+            self.assertTrue(resp.data["photo"].startswith("http"))
+            user.refresh_from_db()
+            self.assertTrue(user.photo)
+
+            resp = self.client.delete("/api/auth/me/photo/")
+            self.assertEqual(resp.status_code, 200)
+            self.assertIsNone(resp.data["photo"])
+
+    def test_photo_rejects_non_image(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        user = User.objects.create_user(phone=PHONE, full_name="Ahmed", phone_verified=True)
+        self.client.force_authenticate(user)
+        fake = SimpleUploadedFile("virus.png", b"pas une image", content_type="image/png")
+        resp = self.client.post("/api/auth/me/photo/", {"photo": fake}, format="multipart")
+        self.assertEqual(resp.status_code, 400)
+
     def test_me_endpoint_requires_auth_and_returns_profile(self):
         code = self._request_code()
         tokens = self.client.post(

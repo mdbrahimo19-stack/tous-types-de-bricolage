@@ -1,5 +1,5 @@
 from django.conf import settings
-from rest_framework import generics, status
+from rest_framework import generics, serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -112,3 +112,41 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+MAX_PHOTO_BYTES = 5 * 1024 * 1024
+
+
+class PhotoInSerializer(serializers.Serializer):
+    photo = serializers.ImageField()
+
+    def validate_photo(self, f):
+        if f.size > MAX_PHOTO_BYTES:
+            raise serializers.ValidationError("Photo trop lourde (5 Mo maximum).")
+        return f
+
+
+class MePhotoView(APIView):
+    """Photo de profil : POST (multipart, champ « photo ») pour la changer, DELETE pour la retirer.
+
+    Pour un artisan, c'est la photo que les clients voient sur ses devis."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        s = PhotoInSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        user = request.user
+        if user.photo:
+            user.photo.delete(save=False)  # pas de vieux fichiers orphelins
+        user.photo = s.validated_data["photo"]
+        user.save(update_fields=["photo"])
+        return Response(UserSerializer(user, context={"request": request}).data)
+
+    def delete(self, request):
+        user = request.user
+        if user.photo:
+            user.photo.delete(save=False)
+            user.photo = None
+            user.save(update_fields=["photo"])
+        return Response(UserSerializer(user, context={"request": request}).data)

@@ -154,13 +154,19 @@ class ProviderSelfSerializer(serializers.ModelSerializer):
 
 
 class ProviderPublicSerializer(serializers.ModelSerializer):
+    """Artisan tel que le client le voit sur un devis : photo et badges de confiance."""
+
     full_name = serializers.CharField(source="user.full_name", read_only=True)
+    photo = serializers.ImageField(source="user.photo", read_only=True)
+    is_verified = serializers.BooleanField(read_only=True)
+    member_since = serializers.IntegerField(source="user.date_joined.year", read_only=True)
 
     class Meta:
         model = ProviderProfile
         fields = (
-            "id", "full_name", "business_name", "legal_status",
+            "id", "full_name", "photo", "business_name", "legal_status",
             "years_experience", "rating_avg", "reviews_count", "missions_count", "verification_status",
+            "is_verified", "member_since",
         )
 
 
@@ -213,7 +219,10 @@ class QuoteSerializer(serializers.ModelSerializer):
 
     def get_provider_detail(self, obj):
         profile = getattr(obj.provider, "provider_profile", None)
-        return ProviderPublicSerializer(profile).data if profile else {"full_name": obj.provider.full_name}
+        if not profile:
+            return {"full_name": obj.provider.full_name}
+        # le contexte (requête) donne l'adresse complète de la photo
+        return ProviderPublicSerializer(profile, context=self.context).data
 
 
 class QuoteCreateSerializer(serializers.ModelSerializer):
