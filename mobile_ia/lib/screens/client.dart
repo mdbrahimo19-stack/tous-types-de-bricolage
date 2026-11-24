@@ -9,6 +9,8 @@ import '../config.dart';
 import '../l10n.dart';
 import '../location.dart';
 import '../state/session.dart';
+import '../theme.dart';
+import '../widgets/category_icon.dart';
 import '../widgets/common.dart';
 import 'shared.dart';
 
@@ -41,93 +43,218 @@ class ClientHomeScreen extends StatelessWidget {
     }
   }
 
+  void _describe(BuildContext context) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const DescribeProblemScreen()));
+
+  /// Tous les services, dans une feuille qui monte du bas.
+  void _allServices(BuildContext context, List<Json> roots) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        builder: (ctx, scroll) => GridView.count(
+          controller: scroll,
+          crossAxisCount: 4,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.72,
+          children: [
+            for (final root in roots)
+              _ServiceTile(root: root, onTap: () {
+                Navigator.pop(ctx);
+                _fromRoot(context, root);
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = context.watch<Session>();
-    final scheme = Theme.of(context).colorScheme;
+    final p = AppPalette.current;
+    final text = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('app_name')),
-        actions: [
-          IconButton(
-            tooltip: context.tr('support_title'),
-            icon: const Icon(Icons.support_agent),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportChatScreen())),
-          ),
-        ],
-      ),
-      body: LoadView<List<Json>>(
-        load: () => Refs.categories(context.api),
-        builder: (context, roots, _) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(context.tr('hello', {'name': session.firstName}),
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-            Card(
-              color: scheme.primaryContainer,
-              child: Padding(
+      body: SafeArea(
+        child: LoadView<List<Json>>(
+          load: () => Refs.categories(context.api),
+          builder: (context, roots, _) => ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            children: [
+              // --- bonjour + aide
+              Row(children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(context.tr('hello', {'name': session.firstName}),
+                        style: text.bodyMedium?.copyWith(color: p.muted)),
+                    Text(context.tr('home_question'),
+                        style: text.titleLarge?.copyWith(fontWeight: FontWeight.w800, height: 1.2)),
+                  ]),
+                ),
+                IconButton.filled(
+                  tooltip: context.tr('support_title'),
+                  style: IconButton.styleFrom(backgroundColor: p.ink, foregroundColor: Colors.white, fixedSize: const Size(48, 48)),
+                  icon: const Icon(Icons.support_agent),
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportChatScreen())),
+                ),
+              ]),
+              const SizedBox(height: 16),
+
+              // --- fausse barre de recherche : ouvre la description par l'IA
+              Material(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: p.border)),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _describe(context),
+                  child: SizedBox(
+                    height: 54,
+                    child: Row(children: [
+                      const SizedBox(width: 16),
+                      Icon(Icons.search, color: p.muted),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(context.tr('home_search_hint'),
+                            maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.muted, fontSize: 15)),
+                      ),
+                    ]),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // --- grande carte sombre : publier une demande
+              Container(
                 padding: const EdgeInsets.all(20),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Row(children: [
-                    Icon(Icons.auto_awesome, color: scheme.onPrimaryContainer),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(context.tr('describe_title'),
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(color: scheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
+                decoration: BoxDecoration(color: p.ink, borderRadius: BorderRadius.circular(22)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(context.tr('home_cta_title'),
+                      style: text.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w700, height: 1.3)),
+                  const SizedBox(height: 8),
+                  Text(context.tr('home_cta_sub'),
+                      style: text.bodySmall?.copyWith(color: const Color(0xFFD9D1C9), height: 1.45)),
+                  const SizedBox(height: 14),
+                  Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                    FilledButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: Text(context.tr('home_cta_button')),
+                      onPressed: () => _describe(context),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(foregroundColor: Colors.white),
+                      onPressed: () =>
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const RequestFormScreen())),
+                      child: Text(context.tr('classic_form')),
                     ),
                   ]),
-                  const SizedBox(height: 8),
-                  Text(context.tr('describe_sub'), style: TextStyle(color: scheme.onPrimaryContainer)),
-                  const SizedBox(height: 16),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.edit_note),
-                    label: Text(context.tr('describe_title')),
-                    onPressed: () =>
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const DescribeProblemScreen())),
-                  ),
-                  TextButton(
-                    onPressed: () =>
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RequestFormScreen())),
-                    child: Text(context.tr('classic_form')),
-                  ),
                 ]),
               ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                leading: CircleAvatar(
-                  backgroundColor: scheme.secondaryContainer,
-                  child: Icon(Icons.near_me, color: scheme.onSecondaryContainer),
-                ),
-                title: Text(context.tr('home_nearest')),
+              const SizedBox(height: 22),
+
+              // --- services
+              Row(children: [
+                Expanded(child: Text(context.tr('services'), style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700))),
+                TextButton(onPressed: () => _allServices(context, roots), child: Text(context.tr('see_all'))),
+              ]),
+              const SizedBox(height: 4),
+              GridView.count(
+                crossAxisCount: 4,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 8,
+                childAspectRatio: 0.72,
+                children: [
+                  for (final root in roots.take(8)) _ServiceTile(root: root, onTap: () => _fromRoot(context, root)),
+                ],
               ),
-            ),
-            SectionTitle(context.tr('categories')),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final root in roots)
-                ActionChip(
-                  avatar: const Icon(Icons.build_circle_outlined, size: 18),
-                  label: Text(context.nameOf(root)),
-                  onPressed: () => _fromRoot(context, root),
-                ),
-            ]),
-            const SizedBox(height: 20),
-            ListTile(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              tileColor: scheme.surfaceContainerHighest,
-              leading: const Icon(Icons.support_agent),
-              title: Text(context.tr('need_help')),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportChatScreen())),
-            ),
-          ],
+              const SizedBox(height: 18),
+
+              // --- garanties
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _Guarantee(Icons.verified_user_outlined, context.tr('g1_t'), context.tr('g1_s')),
+                const SizedBox(width: 8),
+                _Guarantee(Icons.star_outline_rounded, context.tr('g2_t'), context.tr('g2_s')),
+                const SizedBox(width: 8),
+                _Guarantee(Icons.payments_outlined, context.tr('g3_t'), context.tr('g3_s')),
+              ]),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// Une case de service : icône dans un carré blanc arrondi + nom.
+class _ServiceTile extends StatelessWidget {
+  const _ServiceTile({required this.root, required this.onTap});
+
+  final Json root;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.current;
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Column(children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: p.border),
+          ),
+          child: Icon(categoryIcon(root['icon']), color: p.primary, size: 28),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          context.nameOf(root),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.2),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Une garantie de confiance (artisans vérifiés, avis réels, paiement à la fin).
+class _Guarantee extends StatelessWidget {
+  const _Guarantee(this.icon, this.title, this.sub);
+
+  final IconData icon;
+  final String title;
+  final String sub;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.current;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: p.border),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, size: 20, color: AppPalette.success),
+          const SizedBox(height: 4),
+          Text(title, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, height: 1.25)),
+          const SizedBox(height: 2),
+          Text(sub, style: TextStyle(fontSize: 10.5, color: p.muted, height: 1.3)),
+        ]),
       ),
     );
   }
