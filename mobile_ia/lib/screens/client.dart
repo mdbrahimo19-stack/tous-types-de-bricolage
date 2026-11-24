@@ -10,6 +10,7 @@ import '../l10n.dart';
 import '../location.dart';
 import '../state/session.dart';
 import '../theme.dart';
+import '../widgets/avatar.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/common.dart';
 import 'shared.dart';
@@ -897,44 +898,77 @@ class _QuoteCard extends StatelessWidget {
     final p = (quote['provider_detail'] as Map?) ?? const {};
     final name = (p['business_name'] as String?)?.isNotEmpty == true ? p['business_name'] : p['full_name'];
     final rating = toNum(p['rating_avg']) ?? 0;
+    final verified = p['is_verified'] == true;
+    final years = (toNum(p['years_experience']) ?? 0).toInt();
+    final palette = AppPalette.current;
+    final meta = [
+      if (years > 0) context.tr('years_exp', {'n': years}),
+      if (p['member_since'] != null) context.tr('member_since', {'y': p['member_since']}),
+    ].join(' · ');
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const CircleAvatar(child: Icon(Icons.person)),
-            const SizedBox(width: 10),
+            PersonAvatar(name: '${name ?? ''}', photoUrl: p['photo'] as String?, size: 56, verified: verified),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${name ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                Row(children: [
-                  const Icon(Icons.star, size: 16, color: Colors.amber),
-                  Text(' ${rating.toStringAsFixed(1)} · ${context.tr('reviews_count', {'n': p['reviews_count'] ?? 0})}'
-                      ' · ${context.tr('missions_done', {'n': p['missions_count'] ?? 0})}',
-                      style: const TextStyle(fontSize: 12)),
+                Wrap(spacing: 6, runSpacing: 2, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  Text('${name ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5)),
+                  if (verified) VerifiedTag(context.tr('verified')),
                 ]),
+                const SizedBox(height: 2),
+                Row(children: [
+                  const Icon(Icons.star_rounded, size: 17, color: AppPalette.star),
+                  const SizedBox(width: 2),
+                  Flexible(
+                    child: Text(
+                      '${rating.toStringAsFixed(1)} · ${context.tr('reviews_count', {'n': p['reviews_count'] ?? 0})}'
+                      ' · ${context.tr('missions_done', {'n': p['missions_count'] ?? 0})}',
+                      style: TextStyle(fontSize: 12.5, color: palette.muted),
+                    ),
+                  ),
+                ]),
+                if (meta.isNotEmpty)
+                  Text(meta, style: TextStyle(fontSize: 12, color: palette.muted)),
+              ]),
+            ),
+          ]),
+          Divider(height: 24, color: palette.border),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(money(context, quote['amount']),
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+                Text(
+                  [
+                    context.tr('lead_time_days', {'n': quote['lead_time_days']}),
+                    if ((quote['estimated_duration'] as String?)?.isNotEmpty == true) quote['estimated_duration'],
+                  ].join(' · '),
+                  style: TextStyle(fontSize: 12.5, color: palette.muted),
+                ),
               ]),
             ),
             StatusChip(status: '${quote['status']}', prefix: 'qs'),
           ]),
-          const SizedBox(height: 10),
-          Text(money(context, quote['amount']),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          Text([
-            context.tr('lead_time_days', {'n': quote['lead_time_days']}),
-            if ((quote['estimated_duration'] as String?)?.isNotEmpty == true) quote['estimated_duration'],
-          ].join(' · ')),
           if ((quote['message'] as String?)?.isNotEmpty == true) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text('${quote['message']}', style: const TextStyle(fontStyle: FontStyle.italic)),
           ],
-          const SizedBox(height: 10),
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            TextButton.icon(onPressed: onChat, icon: const Icon(Icons.chat_bubble_outline), label: Text(context.tr('chat'))),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onChat,
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: Text(context.tr('chat')),
+              ),
+            ),
             if (canAccept) ...[
               const SizedBox(width: 8),
-              FilledButton(onPressed: onAccept, child: Text(context.tr('accept'))),
+              Expanded(child: FilledButton(onPressed: onAccept, child: Text(context.tr('accept')))),
             ],
           ]),
         ]),

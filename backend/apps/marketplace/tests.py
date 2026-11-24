@@ -232,6 +232,12 @@ class FeedQuoteMissionTests(TestCase):
         # le client compare
         listing = self.cc.get(f"/api/requests/{req.id}/quotes/")
         self.assertEqual(len(listing.data), 2)
+        # badges de confiance de l'artisan sur chaque devis (sans son téléphone)
+        detail = listing.data[0]["provider_detail"]
+        self.assertTrue(detail["is_verified"])
+        self.assertIsInstance(detail["member_since"], int)
+        self.assertIn("photo", detail)
+        self.assertNotIn("phone", detail)
 
         # un autre prestataire ne peut pas accepter (devis hors de son périmètre -> 404)
         self.assertIn(pc2.post(f"/api/quotes/{q1.data['id']}/accept/").status_code, (403, 404))
