@@ -51,6 +51,7 @@ from .serializers import (
     NotificationSerializer,
     ProviderCategorySerializer,
     ProviderPublicProfileSerializer,
+    PublicReviewSerializer,
     ProviderSelfSerializer,
     QuoteCreateSerializer,
     QuoteSerializer,
@@ -648,7 +649,7 @@ class PublicProviderViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
             .order_by("-created_at")
         )
         page = self.paginate_queryset(qs)
-        data = ReviewSerializer(page if page is not None else qs, many=True).data
+        data = PublicReviewSerializer(page if page is not None else qs, many=True).data
         return self.get_paginated_response(data) if page is not None else Response(data)
 
 

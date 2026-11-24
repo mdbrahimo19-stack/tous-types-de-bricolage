@@ -396,6 +396,23 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PublicReviewSerializer(serializers.ModelSerializer):
+    """Avis affiché sur la fiche publique d'un artisan : prénom + initiale du client seulement."""
+
+    author_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = ("id", "author_name", "rating", "comment", "reply", "created_at")
+        read_only_fields = fields
+
+    def get_author_name(self, obj):
+        parts = (obj.author.full_name or "").split()
+        if not parts:
+            return ""
+        return f"{parts[0]} {parts[1][0]}." if len(parts) > 1 else parts[0]
+
+
 class ReviewCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
@@ -408,6 +425,8 @@ class ProviderPublicProfileSerializer(serializers.ModelSerializer):
 
     full_name = serializers.CharField(source="user.full_name", read_only=True)
     photo = serializers.ImageField(source="user.photo", read_only=True)
+    is_verified = serializers.BooleanField(read_only=True)
+    member_since = serializers.IntegerField(source="user.date_joined.year", read_only=True)
     base_wilaya = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
     badges = serializers.SerializerMethodField()
@@ -417,7 +436,7 @@ class ProviderPublicProfileSerializer(serializers.ModelSerializer):
         fields = (
             "id", "full_name", "photo", "business_name", "legal_status", "bio", "years_experience",
             "base_wilaya", "rating_avg", "reviews_count", "missions_count", "is_available",
-            "verification_status", "categories", "badges",
+            "verification_status", "is_verified", "member_since", "categories", "badges",
         )
 
     def get_base_wilaya(self, obj):

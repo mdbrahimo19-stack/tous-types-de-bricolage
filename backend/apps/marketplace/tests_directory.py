@@ -34,3 +34,16 @@ class ProviderPublicProfileTests(TestCase):
         self.assertEqual(float(cat["callout_fee"]), 500)
         self.assertNotIn("phone", data)
         self.assertNotIn("+213661000101", str(data))
+        self.assertTrue(data["is_verified"])
+        self.assertIsInstance(data["member_since"], int)
+
+    def test_reviews_show_first_name_and_initial_only(self):
+        from apps.accounts.models import User
+
+        from .models import Review
+        from .serializers import PublicReviewSerializer
+
+        author = User(full_name="Samira Kaci Benali")
+        review = Review(author=author, target=self.p1.user, rating=5, comment="Très bien")
+        self.assertEqual(PublicReviewSerializer(review).data["author_name"], "Samira K.")
+        self.assertEqual(self.client.get(f"/api/providers/{self.p1.id}/reviews/").status_code, 200)

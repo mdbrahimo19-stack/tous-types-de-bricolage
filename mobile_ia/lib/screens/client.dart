@@ -13,6 +13,7 @@ import '../theme.dart';
 import '../widgets/avatar.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/common.dart';
+import 'provider_profile.dart';
 import 'shared.dart';
 
 const _urgencies = ['immediate', 'today', 'this_week', 'flexible'];
@@ -783,6 +784,23 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
     _key.currentState?.reload();
   }
 
+  /// « Voir le profil » : seulement pour un artisan validé (sa fiche publique existe).
+  VoidCallback? _profileOpener(Json quote, bool canAccept) {
+    final p = (quote['provider_detail'] as Map?) ?? const {};
+    final id = p['id'];
+    if (id is! int || p['is_verified'] != true) return null;
+    return () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProviderProfileScreen(
+              providerId: id,
+              amount: quote['amount'],
+              onAccept: canAccept ? () => _accept(quote) : null,
+            ),
+          ),
+        );
+  }
+
   Future<void> _requestAction(String action, {String? confirmKey}) async {
     if (confirmKey != null && !await confirmDialog(context, context.tr(confirmKey))) return;
     if (!mounted) return;
@@ -876,6 +894,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                   canAccept: open && q['status'] == 'sent',
                   onAccept: () => _accept(q),
                   onChat: () => openConversation(context, requestId: widget.requestId, otherUserId: q['provider'] as int),
+                  onProfile: _profileOpener(q, open && q['status'] == 'sent'),
                 ),
             ],
           );
@@ -886,10 +905,17 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
 }
 
 class _QuoteCard extends StatelessWidget {
-  const _QuoteCard({required this.quote, required this.canAccept, required this.onAccept, required this.onChat});
+  const _QuoteCard({
+    required this.quote,
+    required this.canAccept,
+    required this.onAccept,
+    required this.onChat,
+    this.onProfile,
+  });
 
   final Json quote;
   final bool canAccept;
+  final VoidCallback? onProfile;
   final VoidCallback onAccept;
   final VoidCallback onChat;
 
@@ -936,6 +962,17 @@ class _QuoteCard extends StatelessWidget {
               ]),
             ),
           ]),
+          if (onProfile != null)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton(
+                onPressed: onProfile,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text(context.tr('see_profile')),
+                  const Icon(Icons.chevron_right, size: 18),
+                ]),
+              ),
+            ),
           Divider(height: 24, color: palette.border),
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Expanded(
