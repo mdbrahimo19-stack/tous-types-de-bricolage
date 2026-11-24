@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_client.dart';
+import '../flavor.dart';
 import '../l10n.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
@@ -71,12 +72,12 @@ class _PhoneScreenState extends State<PhoneScreen> {
 
     return Scaffold(
       body: DecoratedBox(
-        // dégradé « chantier » : orange vif -> brun
-        decoration: const BoxDecoration(
+        // dégradé : orange « chantier » (BRICOOL) ou bleu nuit (BRICOOL Pro)
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF59A3A), Color(0xFFD9670F), Color(0xFF8A3F0E)],
+            colors: AppFlavor.heroGradient,
           ),
         ),
         child: SafeArea(
@@ -125,7 +126,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              context.tr('app_name'),
+                              AppFlavor.name,
                               textAlign: TextAlign.center,
                               style: theme.textTheme.titleLarge?.copyWith(
                                 color: onHero,
@@ -143,7 +144,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
                             child: Column(
                               children: [
                                 Text(
-                                  context.tr('app_name'),
+                                  AppFlavor.name,
                                   textAlign: TextAlign.center,
                                   style: theme.textTheme.headlineMedium
                                       ?.copyWith(
@@ -345,7 +346,6 @@ class _OtpScreenState extends State<OtpScreen> {
   final _form = GlobalKey<FormState>();
   late final _code = TextEditingController(text: widget.debugCode ?? '');
   final _name = TextEditingController();
-  bool _asProvider = false;
   bool _busy = false;
 
   bool get _isRegistration => widget.purpose == 'registration';
@@ -359,7 +359,6 @@ class _OtpScreenState extends State<OtpScreen> {
         code: _code.text.trim(),
         purpose: widget.purpose,
         fullName: _name.text.trim(),
-        asProvider: _asProvider,
       );
     });
     if (!mounted) return;
@@ -411,14 +410,6 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 validator: (v) =>
                     (v ?? '').trim().isEmpty ? context.tr('required') : null,
-              ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _asProvider,
-                onChanged: (v) => setState(() => _asProvider = v),
-                title: Text(context.tr('i_am_provider')),
-                secondary: const Icon(Icons.handyman),
               ),
             ],
             const SizedBox(height: 20),

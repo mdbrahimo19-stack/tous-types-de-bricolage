@@ -70,6 +70,10 @@ class OTPVerifyView(APIView):
             except User.DoesNotExist:
                 return Response({"detail": "Compte introuvable."}, status=status.HTTP_404_NOT_FOUND)
             created = False
+            if data.get("as_provider") and not user.is_provider:
+                # client existant qui se connecte dans l'app BRICOOL Pro : il devient
+                # aussi prestataire (profil « en attente », validé par l'équipe)
+                user, _ = get_or_create_user_after_otp(phone, as_provider=True)
         else:  # registration (reset géré plus tard)
             user, created = get_or_create_user_after_otp(
                 phone,

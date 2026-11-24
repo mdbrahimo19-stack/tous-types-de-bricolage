@@ -39,6 +39,21 @@ android {
         versionName = flutter.versionName
     }
 
+    // Deux applications installables côte à côte (flutter build apk --flavor client|pro).
+    // « client » garde l'identifiant historique : la mise à jour s'installe par-dessus l'ancienne app.
+    flavorDimensions += "app"
+    productFlavors {
+        create("client") {
+            dimension = "app"
+            manifestPlaceholders["appLabel"] = "BRICOOL"
+        }
+        create("pro") {
+            dimension = "app"
+            applicationIdSuffix = ".pro"
+            manifestPlaceholders["appLabel"] = "BRICOOL Pro"
+        }
+    }
+
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
             create("release") {

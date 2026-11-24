@@ -10,7 +10,7 @@ import 'points.dart';
 import 'provider.dart';
 import 'shared.dart';
 
-/// Navigation principale : onglets différents selon le mode client / prestataire.
+/// Navigation principale : onglets client (BRICOOL) ou artisan (BRICOOL Pro).
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -91,19 +91,7 @@ class ProfileScreen extends StatelessWidget {
               onSelectionChanged: (s) => session.setLocale(s.first),
             ),
           ),
-          if (session.isProvider) ...[
-            ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: Text(context.tr('mode')),
-              trailing: SegmentedButton<bool>(
-                segments: [
-                  ButtonSegment(value: false, label: Text(context.tr('mode_client'))),
-                  ButtonSegment(value: true, label: Text(context.tr('mode_provider'))),
-                ],
-                selected: {session.providerMode},
-                onSelectionChanged: (s) => session.setProviderMode(s.first),
-              ),
-            ),
+          if (session.asProvider) ...[
             ListTile(
               leading: const Icon(Icons.handyman_outlined),
               title: Text(context.tr('provider_profile')),
@@ -118,7 +106,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ] else
             ListTile(
-              leading: const Icon(Icons.info_outline),
+              leading: const Icon(Icons.handyman_outlined),
               title: Text(context.tr('become_provider_hint'), style: const TextStyle(fontSize: 13)),
             ),
           ListTile(

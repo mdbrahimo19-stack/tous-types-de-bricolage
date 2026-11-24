@@ -75,6 +75,31 @@ class OTPAuthFlowTests(TestCase):
         self.assertEqual(resp.status_code, 200, resp.content)
         self.assertFalse(resp.data["created"])
 
+    def test_login_from_pro_app_makes_client_a_pending_provider(self):
+        User.objects.create_user(phone=PHONE, full_name="Sara", phone_verified=True)
+        code = self._request_code(purpose="login")
+        resp = self.client.post(
+            "/api/auth/otp/verify/",
+            {"phone": PHONE, "code": code, "purpose": "login", "as_provider": True},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertTrue(resp.data["user"]["is_provider"])
+        self.assertEqual(resp.data["user"]["provider_profile"]["verification_status"], "pending")
+        user = User.objects.get(phone=PHONE)
+        self.assertTrue(ProviderProfile.objects.filter(user=user).exists())
+
+    def test_login_from_client_app_keeps_roles(self):
+        User.objects.create_user(phone=PHONE, full_name="Sara", phone_verified=True)
+        code = self._request_code(purpose="login")
+        resp = self.client.post(
+            "/api/auth/otp/verify/",
+            {"phone": PHONE, "code": code, "purpose": "login", "as_provider": False},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertFalse(resp.data["user"]["is_provider"])
+
     def test_me_endpoint_requires_auth_and_returns_profile(self):
         code = self._request_code()
         tokens = self.client.post(
