@@ -9,6 +9,7 @@ import 'flavor.dart';
 import 'screens/auth.dart';
 import 'screens/shell.dart';
 import 'state/session.dart';
+import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +27,6 @@ class TtbApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<Session>();
-    final seed = AppFlavor.seed; // orange (BRICOOL) ou bleu nuit (BRICOOL Pro)
     return MaterialApp(
       title: AppFlavor.name,
       debugShowCheckedModeBanner: false,
@@ -37,11 +37,8 @@ class TtbApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: seed),
-        inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder()),
-        cardTheme: const CardThemeData(margin: EdgeInsets.zero),
-      ),
+      // orange (BRICOOL) ou bleu nuit (BRICOOL Pro), police Poppins : voir theme.dart
+      theme: buildAppTheme(),
       // la clé force un nouvel arbre de navigation à la connexion / déconnexion
       home: session.loggedIn ? const HomeShell(key: ValueKey('home')) : const PhoneScreen(key: ValueKey('auth')),
     );

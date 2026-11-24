@@ -14,9 +14,6 @@ class AppFlavor {
 
   static String get name => isPro ? 'BRICOOL Pro' : 'BRICOOL';
 
-  /// Couleur principale : orange pour les clients, bleu nuit pour les artisans.
-  static Color get seed => isPro ? const Color(0xFF1B2A41) : const Color(0xFFE8740C);
-
   /// Dégradé de l'écran de connexion.
   static List<Color> get heroGradient => isPro
       ? const [Color(0xFF3B5A85), Color(0xFF1F3550), Color(0xFF0F1B2B)]
