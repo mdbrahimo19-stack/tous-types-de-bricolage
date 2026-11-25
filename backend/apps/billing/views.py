@@ -87,12 +87,15 @@ class CardPaymentView(APIView):
     def post(self, request):
         profile = _profile(request.user)
         done = request.build_absolute_uri(reverse("billing:card-done"))
+        gateway_name, _ = services.card_gateway()
         webhook = ""
         if settings.PUBLIC_BASE_URL.startswith("https://"):
-            webhook = settings.PUBLIC_BASE_URL + reverse("billing:chargily-webhook")
+            route = "billing:slickpay-webhook" if gateway_name == "slickpay" else "billing:chargily-webhook"
+            webhook = settings.PUBLIC_BASE_URL + reverse(route)
+        # Slick-Pay n'a qu'une adresse de retour : pas de ?r=… (l'app vérifie au retour)
         payment, checkout_url = services.start_card_payment(
             profile,
-            success_url=f"{done}?r=ok",
+            success_url=done if gateway_name == "slickpay" else f"{done}?r=ok",
             failure_url=f"{done}?r=ko",
             webhook_url=webhook,
             locale=getattr(request.user, "language", "fr") or "fr",
@@ -130,21 +133,46 @@ def chargily_webhook(request):
     return HttpResponse("ok")
 
 
+@csrf_exempt
+@require_POST
+def slickpay_webhook(request):
+    """Slick-Pay signale une facture. On ne croit pas le message : on relit la facture chez Slick-Pay."""
+    invoice_id = request.POST.get("id")
+    if not invoice_id:
+        try:
+            invoice_id = (json.loads(request.body.decode("utf-8") or "{}") or {}).get("id")
+        except (ValueError, UnicodeDecodeError, AttributeError):
+            invoice_id = None
+    if invoice_id:
+        services.handle_slickpay_notification(invoice_id)
+    return HttpResponse("ok")
+
+
 def card_done(request):
-    """Page affichée après le paiement : on invite l'artisan à revenir dans BRICOOL Pro."""
-    ok = request.GET.get("r") == "ok"
-    title = "Paiement reçu ✔" if ok else "Paiement non abouti"
-    text = (
-        "Merci ! Revenez dans l'application BRICOOL Pro : votre compte se met à jour tout seul."
-        if ok
-        else "Le paiement n'a pas été effectué. Revenez dans BRICOOL Pro pour réessayer."
-    )
-    text_ar = (
-        "شكراً! عد إلى تطبيق BRICOOL Pro: يتم تحديث حسابك تلقائياً."
-        if ok
-        else "لم تتم عملية الدفع. عد إلى BRICOOL Pro للمحاولة مجدداً."
-    )
-    color = "#0E7A55" if ok else "#9A2B12"
+    """Page affichée après le paiement : on invite l'artisan à revenir dans BRICOOL Pro.
+
+    Chargily précise ?r=ok / ?r=ko ; Slick-Pay n'a qu'une adresse de retour (pas de r) :
+    l'application vérifie elle-même le paiement au retour."""
+    result = request.GET.get("r")
+    ok = result == "ok"
+    if result is None:
+        title = "Paiement terminé"
+        text = "Revenez dans l'application BRICOOL Pro : votre paiement y est vérifié automatiquement."
+        text_ar = "عد إلى تطبيق BRICOOL Pro: يتم التحقق من الدفع تلقائياً."
+        color = "#1B2A41"
+    else:
+        title = "Paiement reçu ✔" if ok else "Paiement non abouti"
+        text = (
+            "Merci ! Revenez dans l'application BRICOOL Pro : votre compte se met à jour tout seul."
+            if ok
+            else "Le paiement n'a pas été effectué. Revenez dans BRICOOL Pro pour réessayer."
+        )
+        text_ar = (
+            "شكراً! عد إلى تطبيق BRICOOL Pro: يتم تحديث حسابك تلقائياً."
+            if ok
+            else "لم تتم عملية الدفع. عد إلى BRICOOL Pro للمحاولة مجدداً."
+        )
+        color = "#0E7A55" if ok else "#9A2B12"
     html = (
         "<!doctype html><html lang='fr'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width,initial-scale=1'><title>BRICOOL Pro</title></head>"

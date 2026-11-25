@@ -197,6 +197,13 @@ PAYMENTS_NOTIFY_EMAIL = os.environ.get("PAYMENTS_NOTIFY_EMAIL", "")
 # Sans clé secrète, le bouton « Payer par carte » est masqué (BaridiMob reste disponible).
 CHARGILY_SECRET_KEY = os.environ.get("CHARGILY_SECRET_KEY", "")
 CHARGILY_MODE = os.environ.get("CHARGILY_MODE", "test")  # test | live
+# Ou via Slick-Pay (https://slick-pay.com, page SATIM CIB / Edahabia) : clé de l'espace
+# marchand « Clé API ». SANDBOX=false avec une clé de production (vrais paiements).
+SLICKPAY_PUBLIC_KEY = os.environ.get("SLICKPAY_PUBLIC_KEY", "")
+SLICKPAY_SANDBOX = env_bool("SLICKPAY_SANDBOX", False)
+# Service utilisé pour les cartes : "slickpay", "chargily", ou vide = le premier configuré
+# (Slick-Pay d'abord, puis Chargily).
+CARD_GATEWAY = os.environ.get("CARD_GATEWAY", "")
 # Adresse publique HTTPS du serveur (ex. https://api.bricool.dz) : Chargily y envoie
 # la confirmation de paiement (webhook). Vide en local : vérification au retour dans l'app.
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")

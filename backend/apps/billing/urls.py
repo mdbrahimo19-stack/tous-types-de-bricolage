@@ -1,6 +1,14 @@
 from django.urls import path
 
-from .views import CardPaymentSyncView, CardPaymentView, PaymentsView, PointsView, card_done, chargily_webhook
+from .views import (
+    CardPaymentSyncView,
+    CardPaymentView,
+    PaymentsView,
+    PointsView,
+    card_done,
+    chargily_webhook,
+    slickpay_webhook,
+)
 
 app_name = "billing"
 
@@ -11,5 +19,6 @@ urlpatterns = [
     path("provider/payments/card/", CardPaymentView.as_view(), name="card-payment"),
     path("provider/payments/<int:pk>/sync/", CardPaymentSyncView.as_view(), name="card-sync"),
     path("billing/chargily/webhook/", chargily_webhook, name="chargily-webhook"),
+    path("billing/slickpay/webhook/", slickpay_webhook, name="slickpay-webhook"),
     path("billing/paiement-termine/", card_done, name="card-done"),
 ]

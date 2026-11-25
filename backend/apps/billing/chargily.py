@@ -62,7 +62,8 @@ def _call(method: str, path: str, body: dict | None = None) -> dict:
 
 
 def create_checkout(*, amount_da: int, success_url: str, failure_url: str, webhook_url: str = "",
-                    metadata: dict | None = None, locale: str = "fr", description: str = "") -> dict:
+                    metadata: dict | None = None, locale: str = "fr", description: str = "",
+                    payer: dict | None = None) -> dict:  # payer : inutile chez Chargily
     body = {
         "amount": int(amount_da),
         "currency": "dzd",
@@ -82,6 +83,10 @@ def create_checkout(*, amount_da: int, success_url: str, failure_url: str, webho
 
 def retrieve_checkout(checkout_id: str) -> dict:
     return _call("GET", f"/checkouts/{checkout_id}")
+
+
+def cancel_checkout(checkout_id: str) -> None:
+    """Chargily n'a pas de suppression : une page non payée expire d'elle-même."""
 
 
 def valid_signature(raw_body: bytes, signature: str | None) -> bool:

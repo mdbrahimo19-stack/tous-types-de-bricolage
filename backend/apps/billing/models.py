@@ -55,8 +55,9 @@ class Payment(models.Model):
     amount_da = models.PositiveIntegerField(_("montant (DA)"))
     reference = models.CharField(_("référence BaridiMob"), max_length=80, blank=True)
     screenshot = models.ImageField(_("capture BaridiMob"), upload_to="payments/%Y/%m/", blank=True)
-    # paiement par carte : identifiant de la page de paiement Chargily
-    checkout_id = models.CharField(_("paiement Chargily"), max_length=64, blank=True, db_index=True)
+    # paiement par carte : service utilisé (slickpay / chargily) et identifiant de sa page de paiement
+    gateway = models.CharField(_("service de paiement"), max_length=12, blank=True)
+    checkout_id = models.CharField(_("référence du paiement en ligne"), max_length=64, blank=True, db_index=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     admin_note = models.CharField(_("note (visible par le bricoleur)"), max_length=255, blank=True)
     created_at = models.DateTimeField(_("envoyé le"), auto_now_add=True)
