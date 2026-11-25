@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from . import privacy
 from .models import User
 from .otp import issue_otp, verify_otp
 from .sms import SMSError
@@ -134,6 +135,32 @@ class MePrivacyView(APIView):
     def post(self, request):
         request.user.accept_privacy(settings.PRIVACY_POLICY_VERSION)
         return Response(UserSerializer(request.user, context={"request": request}).data)
+
+
+class MeExportView(APIView):
+    """GET /api/auth/me/export/ : droit d'accès, toutes les données de la personne (JSON)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "auth"
+
+    def get(self, request):
+        return Response(privacy.export_user_data(request.user, request))
+
+
+class MeDeleteView(APIView):
+    """POST /api/auth/me/delete/ {"confirm": true} : droit à l'effacement (anonymisation définitive)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.data.get("confirm") is not True:
+            return Response({"detail": "Confirmation manquante."}, status=status.HTTP_400_BAD_REQUEST)
+        reasons = privacy.deletion_blockers(request.user)
+        if reasons:
+            return Response({"detail": " ".join(reasons), "code": "deletion_blocked"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        privacy.anonymize_user(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def privacy_policy(request):

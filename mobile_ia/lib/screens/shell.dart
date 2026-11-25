@@ -126,6 +126,12 @@ class ProfileScreen extends StatelessWidget {
             onTap: () => openPrivacyPolicy(context),
           ),
           ListTile(
+            leading: const Icon(Icons.folder_shared_outlined),
+            title: Text(context.tr('data_title')),
+            subtitle: Text(context.tr('data_menu_sub')),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyDataScreen())),
+          ),
+          ListTile(
             leading: const Icon(Icons.support_agent),
             title: Text(context.tr('support_title')),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportChatScreen())),
@@ -137,6 +143,11 @@ class ProfileScreen extends StatelessWidget {
             onTap: () async {
               if (await confirmDialog(context, context.tr('logout_confirm'))) await session.logout();
             },
+          ),
+          ListTile(
+            leading: Icon(Icons.delete_forever_outlined, color: Colors.red.shade700),
+            title: Text(context.tr('delete_title'), style: TextStyle(color: Colors.red.shade700)),
+            onTap: () => confirmDeleteAccount(context),
           ),
         ],
       ),

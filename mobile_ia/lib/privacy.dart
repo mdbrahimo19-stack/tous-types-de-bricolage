@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'api/api_client.dart';
 import 'config.dart';
 import 'flavor.dart';
 import 'l10n.dart';
@@ -74,6 +78,99 @@ class _PrivacyGateScreenState extends State<PrivacyGateScreen> {
       ),
     );
   }
+}
+
+/// Droit d'accès : tout ce que BRICOOL conserve sur la personne, par rubrique, + copie complète.
+class MyDataScreen extends StatelessWidget {
+  const MyDataScreen({super.key});
+
+  static const _sections = {
+    'compte': 'data_account',
+    'adresses': 'data_addresses',
+    'demandes': 'data_requests',
+    'devis_envoyes': 'data_quotes',
+    'missions': 'data_missions',
+    'messages_envoyes': 'data_messages',
+    'avis_ecrits': 'data_reviews_written',
+    'avis_recus': 'data_reviews_received',
+    'notifications': 'data_notifications',
+    'profil_artisan': 'data_provider',
+    'realisations': 'data_portfolio',
+    'points': 'data_points',
+    'paiements': 'data_payments',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.current;
+    return Scaffold(
+      appBar: AppBar(title: Text(context.tr('data_title'))),
+      body: LoadView<Json>(
+        load: () async => ((await context.api.get('/api/auth/me/export/')) as Map).cast<String, dynamic>(),
+        builder: (context, data, _) {
+          const encoder = JsonEncoder.withIndent('  ');
+          return ListView(padding: const EdgeInsets.all(16), children: [
+            Text(context.tr('data_intro'), style: TextStyle(color: p.muted, height: 1.45)),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              icon: const Icon(Icons.copy_all_outlined),
+              label: Text(context.tr('data_copy')),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: encoder.convert(data)));
+                showInfo(context, context.tr('copied'));
+              },
+            ),
+            const SizedBox(height: 12),
+            for (final entry in _sections.entries)
+              if (data.containsKey(entry.key))
+                Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ExpansionTile(
+                    shape: const Border(),
+                    title: Text(context.tr(entry.value), style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(_count(context, data[entry.key]), style: TextStyle(color: p.muted, fontSize: 12.5)),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    children: [
+                      SelectableText(
+                        encoder.convert(data[entry.key]),
+                        textDirection: TextDirection.ltr,
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+          ]);
+        },
+      ),
+    );
+  }
+
+  String _count(BuildContext context, Object? value) =>
+      value is List ? context.tr('data_items', {'n': value.length}) : context.tr('data_details');
+}
+
+/// Droit à l'effacement : confirmation, puis anonymisation définitive du compte et déconnexion.
+Future<void> confirmDeleteAccount(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      icon: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 36),
+      title: Text(ctx.tr('delete_title')),
+      content: Text(ctx.tr('delete_text')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('cancel'))),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(ctx.tr('delete_confirm')),
+        ),
+      ],
+    ),
+  );
+  if (ok != true || !context.mounted) return;
+  final session = context.read<Session>();
+  final done = await runAction(context, session.deleteAccount);
+  if (done && context.mounted) showInfo(context, context.tr('delete_done'));
 }
 
 /// Case « J'accepte la politique de confidentialité » avec lien pour la lire.
