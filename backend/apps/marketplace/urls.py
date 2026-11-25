@@ -8,6 +8,8 @@ from .views import (
     MissionViewSet,
     NotificationViewSet,
     ProviderCategoryViewSet,
+    ProviderPortfolioItemView,
+    ProviderPortfolioView,
     ProviderProfileView,
     PublicProviderViewSet,
     QuoteViewSet,
@@ -30,6 +32,8 @@ router.register("providers", PublicProviderViewSet, basename="provider-public")
 
 urlpatterns = [
     path("provider/me/", ProviderProfileView.as_view(), name="provider-me"),
+    path("provider/portfolio/", ProviderPortfolioView.as_view(), name="provider-portfolio"),
+    path("provider/portfolio/<int:pk>/", ProviderPortfolioItemView.as_view(), name="provider-portfolio-item"),
     path("messages/<int:pk>/flag/", MessageFlagView.as_view(), name="message-flag"),
     path("reviews/<int:pk>/reply/", ReviewReplyView.as_view(), name="review-reply"),
     path("devices/", DeviceRegisterView.as_view(), name="device-register"),

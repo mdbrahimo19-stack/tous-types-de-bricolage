@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.utils import timezone
 from rest_framework import serializers
 
-from apps.accounts.models import ProviderProfile
+from apps.accounts.models import PortfolioPhoto, ProviderProfile
 from apps.catalog.models import Category, ProviderCategory
 from apps.catalog.serializers import CategoryBriefSerializer
 from apps.locations.geo import haversine_km
@@ -419,6 +419,25 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         fields = ("rating", "comment")
 
 
+class PortfolioPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortfolioPhoto
+        fields = ("id", "image", "caption", "created_at")
+        read_only_fields = fields
+
+
+class PortfolioPhotoInSerializer(serializers.Serializer):
+    MAX_BYTES = 5 * 1024 * 1024
+
+    image = serializers.ImageField()
+    caption = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+
+    def validate_image(self, f):
+        if f.size > self.MAX_BYTES:
+            raise serializers.ValidationError("Photo trop lourde (5 Mo maximum).")
+        return f
+
+
 class ProviderPublicProfileSerializer(serializers.ModelSerializer):
     """Fiche publique d'un prestataire (annuaire + détail). Pas de téléphone : le contact
     passe par une demande de devis et la messagerie de l'app."""
@@ -430,13 +449,14 @@ class ProviderPublicProfileSerializer(serializers.ModelSerializer):
     base_wilaya = serializers.SerializerMethodField()
     categories = serializers.SerializerMethodField()
     badges = serializers.SerializerMethodField()
+    portfolio = PortfolioPhotoSerializer(many=True, read_only=True)
 
     class Meta:
         model = ProviderProfile
         fields = (
             "id", "full_name", "photo", "business_name", "legal_status", "bio", "years_experience",
             "base_wilaya", "rating_avg", "reviews_count", "missions_count", "is_available",
-            "verification_status", "is_verified", "member_since", "categories", "badges",
+            "verification_status", "is_verified", "member_since", "categories", "badges", "portfolio",
         )
 
     def get_base_wilaya(self, obj):

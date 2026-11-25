@@ -5,6 +5,7 @@ import '../l10n.dart';
 import '../theme.dart';
 import '../widgets/avatar.dart';
 import '../widgets/common.dart';
+import '../widgets/portfolio.dart';
 
 /// Fiche de l'artisan, ouverte depuis un devis reçu (« Voir le profil »).
 /// Photo, badges de confiance, chiffres, présentation, métiers et avis des clients.
@@ -95,6 +96,12 @@ class ProviderProfileScreen extends StatelessWidget {
                         child: Text(context.nameOf(c), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       ),
                   ]),
+                ],
+                if ((pro['portfolio'] as List? ?? const []).isNotEmpty) ...[
+                  _Title(context.tr('portfolio_title', {'n': (pro['portfolio'] as List).length})),
+                  PortfolioGrid(
+                    photos: (pro['portfolio'] as List).cast<Map>().map((e) => e.cast<String, dynamic>()).toList(),
+                  ),
                 ],
                 _Title(context.tr('client_reviews', {'n': pro['reviews_count'] ?? reviews.length})),
                 if (reviews.isEmpty)

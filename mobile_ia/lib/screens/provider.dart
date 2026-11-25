@@ -12,6 +12,7 @@ import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/avatar.dart';
 import '../widgets/common.dart';
+import '../widgets/portfolio.dart';
 import 'client.dart' show PriceEstimateCard;
 import 'points.dart';
 import 'shared.dart';
@@ -883,6 +884,8 @@ class _ProviderSetupScreenState extends State<ProviderSetupScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 const _MyPhoto(),
+                SectionTitle(context.tr('my_portfolio')),
+                const MyPortfolioEditor(),
                 const SizedBox(height: 8),
                 ListTile(
                   contentPadding: EdgeInsets.zero,

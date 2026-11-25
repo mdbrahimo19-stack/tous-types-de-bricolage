@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils import timezone
+from django.utils.html import format_html
 
-from .models import ClientProfile, DeviceToken, PhoneOTP, ProviderProfile, User
+from .models import ClientProfile, DeviceToken, PhoneOTP, PortfolioPhoto, ProviderProfile, User
 
 
 @admin.register(User)
@@ -24,8 +25,24 @@ class UserAdmin(BaseUserAdmin):
     )
 
 
+class PortfolioPhotoInline(admin.TabularInline):
+    """Réalisations publiées par l'artisan : l'équipe peut retirer une photo inappropriée."""
+
+    model = PortfolioPhoto
+    extra = 0
+    fields = ("preview", "image", "caption", "created_at")
+    readonly_fields = ("preview", "created_at")
+
+    @admin.display(description="Aperçu")
+    def preview(self, obj):
+        if not obj.image:
+            return "—"
+        return format_html('<img src="{}" style="height:80px;border-radius:8px">', obj.image.url)
+
+
 @admin.register(ProviderProfile)
 class ProviderProfileAdmin(admin.ModelAdmin):
+    inlines = (PortfolioPhotoInline,)
     list_display = ("user", "business_name", "legal_status", "verification_status", "rating_avg", "missions_count", "is_available")
     list_filter = ("verification_status", "legal_status", "is_available", "base_wilaya")
     search_fields = ("user__phone", "user__full_name", "business_name", "rc_number", "nif")
