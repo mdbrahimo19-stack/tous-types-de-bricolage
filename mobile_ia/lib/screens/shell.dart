@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../config.dart';
 import '../l10n.dart';
+import '../privacy.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
 import 'client.dart';
@@ -25,6 +26,8 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<Session>();
+    // loi 18-07 : un compte existant doit accepter la version actuelle de la politique
+    if (session.privacyRequired) return const PrivacyGateScreen();
     final provider = session.asProvider;
     if (_lastMode != provider) {
       _index = 0; // changement de mode : retour au premier onglet
@@ -114,6 +117,13 @@ class ProfileScreen extends StatelessWidget {
             title: Text(context.tr('server')),
             subtitle: Text(ServerConfig.baseUrl, textDirection: TextDirection.ltr),
             onTap: () => showServerDialog(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: Text(context.tr('privacy_title')),
+            subtitle: Text(context.tr('privacy_menu_sub')),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () => openPrivacyPolicy(context),
           ),
           ListTile(
             leading: const Icon(Icons.support_agent),

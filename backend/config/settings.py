@@ -208,6 +208,16 @@ CARD_GATEWAY = os.environ.get("CARD_GATEWAY", "")
 # la confirmation de paiement (webhook). Vide en local : vérification au retour dans l'app.
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
 
+# --- Protection des données (loi 18-07 modifiée par la loi 25-11) ---------------
+# Changer la version oblige chaque utilisateur à relire et accepter la politique.
+PRIVACY_POLICY_VERSION = os.environ.get("PRIVACY_POLICY_VERSION", "2026-11-25")
+LEGAL_NAME = os.environ.get("LEGAL_NAME", "BRICOOL [raison sociale à compléter]")
+LEGAL_ADDRESS = os.environ.get("LEGAL_ADDRESS", "[adresse à compléter]")
+PRIVACY_CONTACT_EMAIL = os.environ.get("PRIVACY_CONTACT_EMAIL", "[email à compléter]")
+PRIVACY_DPO = os.environ.get("PRIVACY_DPO", "")
+ANPDP_DECLARATION_REF = os.environ.get("ANPDP_DECLARATION_REF", "[numéro de déclaration à compléter]")
+PRIVACY_RETENTION_YEARS = int(os.environ.get("PRIVACY_RETENTION_YEARS", 3))
+
 # --- Email (console en dev : les emails s'affichent dans le terminal) ---
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")

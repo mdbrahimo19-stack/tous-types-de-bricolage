@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Politique de confidentialité · BRICOOL</title>
+<style>
+  :root { --ink:#1F1A17; --muted:#5E554E; --line:#EDE5DC; --bg:#FAF7F3; --accent:#B04E08; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.6; }
+  main { max-width:760px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:26px; margin:8px 0 4px; }
+  h2 { font-size:18px; margin:28px 0 8px; }
+  p, li { font-size:15px; }
+  .meta { color:var(--muted); font-size:13px; }
+  .box { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 16px; }
+  nav a { color:var(--accent); margin-inline-end:12px; font-weight:600; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:start; border-bottom:1px solid var(--line); padding:8px 6px; vertical-align:top; }
+  [dir="rtl"] { font-family:"Segoe UI",Tahoma,sans-serif; }
+</style>
+</head>
+<body>
+<main>
+<nav><a href="#fr">Français</a><a href="#ar">العربية</a></nav>
+
+<section id="fr">
+<h1>Politique de confidentialité</h1>
+<p class="meta">Applications BRICOOL (clients) et BRICOOL Pro (artisans) · Version {{ version }}</p>
+
+<div class="box">
+<p>BRICOOL met en relation des clients et des artisans en Algérie. Pour cela, nous traitons des données
+personnelles conformément à la <strong>loi n° 18-07 du 10 juin 2018</strong> relative à la protection des
+personnes physiques dans le traitement des données à caractère personnel, modifiée et complétée par la
+<strong>loi n° 25-11 de juillet 2025</strong>, sous le contrôle de l'<strong>ANPDP</strong> (Autorité nationale
+de protection des données à caractère personnel).</p>
+</div>
+
+<h2>1. Responsable du traitement</h2>
+<p>{{ legal_name }} — {{ legal_address }}<br>
+Contact pour vos données : <strong>{{ contact_email }}</strong>{% if dpo %} · Délégué à la protection des données : {{ dpo }}{% endif %}<br>
+Déclaration auprès de l'ANPDP : {{ anpdp_ref }}</p>
+
+<h2>2. Données que nous traitons</h2>
+<table>
+<tr><th>Données</th><th>Pourquoi</th></tr>
+<tr><td>Numéro de téléphone, nom, langue</td><td>Créer et sécuriser votre compte (code SMS)</td></tr>
+<tr><td>Adresse, commune, position GPS (si vous l'autorisez)</td><td>Envoyer une demande aux artisans les plus proches</td></tr>
+<tr><td>Description, photos des demandes, messages, devis, missions, avis</td><td>Fournir le service de mise en relation</td></tr>
+<tr><td>Artisans : photo, présentation, métiers, zone, réalisations, statut de vérification</td><td>Présenter l'artisan aux clients et instaurer la confiance</td></tr>
+<tr><td>Artisans : points, paiements, captures BaridiMob, références de paiement</td><td>Facturer l'utilisation du service</td></tr>
+</table>
+<p>Paiement par carte : votre numéro de carte est saisi sur la page sécurisée de la SATIM (via notre
+prestataire de paiement). <strong>BRICOOL ne voit ni ne conserve jamais votre numéro de carte.</strong></p>
+
+<h2>3. Base légale</h2>
+<p>Votre <strong>consentement explicite</strong>, donné lors de l'inscription, et l'exécution du service que vous
+demandez. Vous pouvez retirer votre consentement à tout moment (voir « Vos droits »).</p>
+
+<h2>4. Qui voit vos données</h2>
+<ul>
+<li><strong>Les autres utilisateurs, seulement si nécessaire</strong> : un artisan voit votre demande (sans votre
+numéro) ; les coordonnées ne sont échangées qu'après l'acceptation d'un devis. Sur la fiche publique d'un artisan,
+les avis n'affichent que le prénom et l'initiale du client.</li>
+<li><strong>Nos prestataires techniques</strong>, uniquement pour faire fonctionner le service : envoi de SMS,
+paiement en ligne (Slick-Pay / SATIM), hébergement.</li>
+<li><strong>L'équipe BRICOOL</strong> : vérification des artisans, paiements, litiges.</li>
+</ul>
+<p>Nous ne vendons jamais vos données.</p>
+
+<h2>5. Transferts hors d'Algérie</h2>
+<p>{{ transfer_text }}</p>
+
+<h2>6. Durée de conservation</h2>
+<ul>
+<li>Compte : tant qu'il est actif, puis suppression ou anonymisation à votre demande ou après {{ retention_years }} ans d'inactivité.</li>
+<li>Codes SMS : quelques minutes (usage unique), puis effacés.</li>
+<li>Paiements et factures : la durée imposée par la réglementation comptable et fiscale.</li>
+</ul>
+
+<h2>7. Vos droits</h2>
+<p>Conformément à la loi, vous pouvez demander l'<strong>accès</strong> à vos données, leur <strong>rectification</strong>,
+leur <strong>effacement</strong>, et vous <strong>opposer</strong> à leur traitement. Écrivez à
+<strong>{{ contact_email }}</strong> ou utilisez le profil de l'application. Vous pouvez aussi saisir l'<strong>ANPDP</strong>.</p>
+
+<h2>8. Sécurité</h2>
+<p>Connexion par code SMS à usage unique, échanges chiffrés (HTTPS) en production, accès limité aux
+personnes autorisées, numéros de téléphone masqués avant l'acceptation d'un devis.</p>
+
+<h2>9. Âge minimum</h2>
+<p>Le service est réservé aux personnes âgées de 18 ans ou plus.</p>
+
+<h2>10. Modifications</h2>
+<p>Si cette politique change, l'application vous demandera de lire et d'accepter la nouvelle version.</p>
+</section>
+
+<hr style="margin:40px 0;border:0;border-top:1px solid var(--line)">
+
+<section id="ar" dir="rtl" lang="ar">
+<h1>سياسة الخصوصية</h1>
+<p class="meta">تطبيقا BRICOOL (للزبائن) و BRICOOL Pro (للحرفيين) · الإصدار {{ version }}</p>
+
+<div class="box">
+<p>يربط BRICOOL بين الزبائن والحرفيين في الجزائر. ولهذا نعالج معطيات شخصية طبقاً لـ<strong>القانون رقم 18-07
+المؤرخ في 10 يونيو 2018</strong> المتعلق بحماية الأشخاص الطبيعيين في مجال معالجة المعطيات ذات الطابع الشخصي،
+المعدّل والمتمّم بـ<strong>القانون رقم 25-11 (يوليو 2025)</strong>، وتحت رقابة <strong>السلطة الوطنية لحماية
+المعطيات ذات الطابع الشخصي</strong>.</p>
+</div>
+
+<h2>1. المسؤول عن المعالجة</h2>
+<p>{{ legal_name }} — {{ legal_address }}<br>
+للتواصل بشأن معطياتك: <strong>{{ contact_email }}</strong><br>
+التصريح لدى السلطة الوطنية: {{ anpdp_ref }}</p>
+
+<h2>2. المعطيات التي نعالجها</h2>
+<ul>
+<li>رقم الهاتف، الاسم، اللغة: لإنشاء حسابك وتأمينه (رمز SMS).</li>
+<li>العنوان، البلدية، الموقع الجغرافي (بإذنك): لإرسال الطلب إلى أقرب الحرفيين.</li>
+<li>وصف الطلبات وصورها، الرسائل، العروض، المهام، الآراء: لتقديم خدمة الربط.</li>
+<li>للحرفيين: الصورة، النبذة، الحرف، المنطقة، الأعمال المنجزة، حالة التحقق، النقاط والمدفوعات.</li>
+</ul>
+<p>الدفع بالبطاقة: يُدخَل رقم بطاقتك في الصفحة الآمنة لـ SATIM. <strong>لا يرى BRICOOL رقم بطاقتك ولا يحتفظ به أبداً.</strong></p>
+
+<h2>3. الأساس القانوني</h2>
+<p><strong>موافقتك الصريحة</strong> عند التسجيل، وتنفيذ الخدمة التي تطلبها. يمكنك سحب موافقتك في أي وقت.</p>
+
+<h2>4. من يطّلع على معطياتك</h2>
+<ul>
+<li>المستخدمون الآخرون عند الضرورة فقط: لا يُتبادل رقم الهاتف إلا بعد قبول عرض سعر.</li>
+<li>مقدّمو الخدمات التقنية: إرسال SMS، الدفع الإلكتروني (Slick-Pay / SATIM)، الاستضافة.</li>
+<li>فريق BRICOOL: التحقق من الحرفيين، المدفوعات، النزاعات.</li>
+</ul>
+<p>لا نبيع معطياتك أبداً.</p>
+
+<h2>5. النقل إلى خارج الجزائر</h2>
+<p>{{ transfer_text_ar }}</p>
+
+<h2>6. مدة الاحتفاظ</h2>
+<p>طالما الحساب نشط، ثم الحذف أو إخفاء الهوية بطلب منك أو بعد {{ retention_years }} سنوات من عدم النشاط. رموز SMS تُحذف بعد دقائق.</p>
+
+<h2>7. حقوقك</h2>
+<p>يمكنك طلب <strong>الاطلاع</strong> على معطياتك و<strong>تصحيحها</strong> و<strong>حذفها</strong> و<strong>الاعتراض</strong> على
+معالجتها: راسلنا على <strong>{{ contact_email }}</strong>. كما يمكنك اللجوء إلى السلطة الوطنية لحماية المعطيات ذات الطابع الشخصي.</p>
+
+<h2>8. السن الأدنى</h2>
+<p>الخدمة مخصّصة للأشخاص البالغين 18 سنة فما فوق.</p>
+</section>
+</main>
+</body>
+</html>

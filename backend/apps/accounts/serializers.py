@@ -19,6 +19,8 @@ class OTPVerifySerializer(serializers.Serializer):
     full_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     as_provider = serializers.BooleanField(required=False, default=False)
     language = serializers.ChoiceField(choices=["fr", "ar"], required=False, default="fr")
+    # consentement explicite à la politique de confidentialité (obligatoire à l'inscription)
+    accept_privacy = serializers.BooleanField(required=False, default=False)
 
 
 class ProviderProfileSerializer(serializers.ModelSerializer):
@@ -44,14 +46,23 @@ class ClientProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     client_profile = ClientProfileSerializer(read_only=True)
     provider_profile = ProviderProfileSerializer(read_only=True)
+    # vrai tant que l'utilisateur n'a pas accepté la version actuelle de la politique
+    privacy_required = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "id", "phone", "email", "full_name", "photo", "is_client", "is_provider",
             "phone_verified", "language", "date_joined", "client_profile", "provider_profile",
+            "privacy_version", "privacy_accepted_at", "privacy_required",
         )
-        read_only_fields = ("id", "phone", "is_client", "is_provider", "phone_verified", "date_joined")
+        read_only_fields = ("id", "phone", "is_client", "is_provider", "phone_verified", "date_joined",
+                            "privacy_version", "privacy_accepted_at")
+
+    def get_privacy_required(self, obj):
+        from django.conf import settings
+
+        return obj.privacy_version != settings.PRIVACY_POLICY_VERSION
 
 
 @transaction.atomic

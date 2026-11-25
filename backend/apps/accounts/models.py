@@ -49,6 +49,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(_("date d'inscription"), default=timezone.now)
     last_seen_at = models.DateTimeField(_("dernière activité"), null=True, blank=True)
 
+    # preuve du consentement (loi 18-07) : version de la politique acceptée et date
+    privacy_version = models.CharField(_("politique de confidentialité acceptée"), max_length=20, blank=True)
+    privacy_accepted_at = models.DateTimeField(_("acceptée le"), null=True, blank=True)
+
+    def accept_privacy(self, version, save=True):
+        self.privacy_version = version
+        self.privacy_accepted_at = timezone.now()
+        if save:
+            self.save(update_fields=["privacy_version", "privacy_accepted_at"])
+
     objects = UserManager()
 
     USERNAME_FIELD = "phone"

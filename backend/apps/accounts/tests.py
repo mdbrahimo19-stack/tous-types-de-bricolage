@@ -25,7 +25,8 @@ class OTPAuthFlowTests(TestCase):
         code = self._request_code()
         resp = self.client.post(
             "/api/auth/otp/verify/",
-            {"phone": PHONE, "code": code, "purpose": "registration", "full_name": "Amine", "as_provider": True},
+            {"phone": PHONE, "code": code, "purpose": "registration", "full_name": "Amine", "as_provider": True,
+             "accept_privacy": True},
             format="json",
         )
         self.assertEqual(resp.status_code, 200, resp.content)
@@ -42,7 +43,7 @@ class OTPAuthFlowTests(TestCase):
         self._request_code()
         resp = self.client.post(
             "/api/auth/otp/verify/",
-            {"phone": PHONE, "code": "000000", "purpose": "registration"},
+            {"phone": PHONE, "code": "000000", "purpose": "registration", "accept_privacy": True},
             format="json",
         )
         self.assertEqual(resp.status_code, 400)
@@ -52,13 +53,47 @@ class OTPAuthFlowTests(TestCase):
     def test_code_is_single_use(self):
         code = self._request_code()
         first = self.client.post(
-            "/api/auth/otp/verify/", {"phone": PHONE, "code": code, "purpose": "registration"}, format="json"
+            "/api/auth/otp/verify/", {"phone": PHONE, "code": code, "purpose": "registration", "accept_privacy": True}, format="json"
         )
         self.assertEqual(first.status_code, 200)
         second = self.client.post(
-            "/api/auth/otp/verify/", {"phone": PHONE, "code": code, "purpose": "registration"}, format="json"
+            "/api/auth/otp/verify/", {"phone": PHONE, "code": code, "purpose": "registration", "accept_privacy": True}, format="json"
         )
         self.assertEqual(second.status_code, 400)
+
+    def test_registration_without_privacy_consent_is_refused_and_code_kept(self):
+        code = self._request_code()
+        resp = self.client.post(
+            "/api/auth/otp/verify/", {"phone": PHONE, "code": code, "purpose": "registration"}, format="json"
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.data["code"], "privacy_required")
+        self.assertFalse(User.objects.filter(phone=PHONE).exists())
+        # le code n'a pas été consommé : l'utilisateur coche la case et réessaie
+        ok = self.client.post(
+            "/api/auth/otp/verify/",
+            {"phone": PHONE, "code": code, "purpose": "registration", "accept_privacy": True},
+            format="json",
+        )
+        self.assertEqual(ok.status_code, 200, ok.content)
+        self.assertFalse(ok.data["user"]["privacy_required"])
+        user = User.objects.get(phone=PHONE)
+        self.assertTrue(user.privacy_version)
+        self.assertIsNotNone(user.privacy_accepted_at)
+
+    def test_existing_user_accepts_new_policy(self):
+        user = User.objects.create_user(phone=PHONE, full_name="Sara", phone_verified=True)
+        self.client.force_authenticate(user)
+        self.assertTrue(self.client.get("/api/auth/me/").data["privacy_required"])
+        resp = self.client.post("/api/auth/me/privacy/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.data["privacy_required"])
+
+    def test_privacy_policy_page_is_public(self):
+        page = self.client.get("/confidentialite/")
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "18-07")
+        self.assertContains(page, "سياسة الخصوصية")
 
     def test_login_requires_existing_account(self):
         resp = self.client.post(
@@ -140,7 +175,7 @@ class OTPAuthFlowTests(TestCase):
     def test_me_endpoint_requires_auth_and_returns_profile(self):
         code = self._request_code()
         tokens = self.client.post(
-            "/api/auth/otp/verify/", {"phone": PHONE, "code": code, "purpose": "registration"}, format="json"
+            "/api/auth/otp/verify/", {"phone": PHONE, "code": code, "purpose": "registration", "accept_privacy": True}, format="json"
         ).data["tokens"]
 
         self.assertEqual(self.client.get("/api/auth/me/").status_code, 401)
