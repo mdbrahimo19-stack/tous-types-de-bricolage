@@ -193,6 +193,14 @@ BARIDIMOB_NAME = os.environ.get("BARIDIMOB_NAME", "")
 # Adresse qui reçoit un email à chaque capture de paiement envoyée
 PAYMENTS_NOTIFY_EMAIL = os.environ.get("PAYMENTS_NOTIFY_EMAIL", "")
 
+# Paiement des points par carte Edahabia / CIB via Chargily Pay (https://chargily.com).
+# Sans clé secrète, le bouton « Payer par carte » est masqué (BaridiMob reste disponible).
+CHARGILY_SECRET_KEY = os.environ.get("CHARGILY_SECRET_KEY", "")
+CHARGILY_MODE = os.environ.get("CHARGILY_MODE", "test")  # test | live
+# Adresse publique HTTPS du serveur (ex. https://api.bricool.dz) : Chargily y envoie
+# la confirmation de paiement (webhook). Vide en local : vérification au retour dans l'app.
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+
 # --- Email (console en dev : les emails s'affichent dans le terminal) ---
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
