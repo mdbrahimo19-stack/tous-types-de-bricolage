@@ -128,6 +128,25 @@ class ProviderProfile(models.Model):
         return self.verification_status == self.Verification.APPROVED
 
 
+class PortfolioPhoto(models.Model):
+    """Photo d'un travail réalisé par l'artisan (galerie visible sur sa fiche publique)."""
+
+    MAX_PER_PROVIDER = 12
+
+    provider = models.ForeignKey(ProviderProfile, on_delete=models.CASCADE, related_name="portfolio")
+    image = models.ImageField(_("photo"), upload_to="portfolio/%Y/%m/")
+    caption = models.CharField(_("légende"), max_length=80, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("réalisation")
+        verbose_name_plural = _("réalisations")
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return self.caption or f"Réalisation #{self.pk}"
+
+
 class PhoneOTP(models.Model):
     class Purpose(models.TextChoices):
         REGISTRATION = "registration", _("Inscription")

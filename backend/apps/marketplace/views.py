@@ -20,7 +20,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.models import ProviderProfile, User
+from apps.accounts.models import PortfolioPhoto, ProviderProfile, User
 from apps.ai import services as ai
 from apps.billing import services as billing
 from apps.catalog.models import ProviderCategory
@@ -50,7 +50,10 @@ from .serializers import (
     MissionSerializer,
     NotificationSerializer,
     ProviderCategorySerializer,
+    PortfolioPhotoInSerializer,
+    PortfolioPhotoSerializer,
     ProviderPublicProfileSerializer,
+    PublicReviewSerializer,
     ProviderSelfSerializer,
     QuoteCreateSerializer,
     QuoteSerializer,
@@ -197,6 +200,43 @@ class ProviderProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return _provider_profile(self.request.user)
+
+
+class ProviderPortfolioView(generics.GenericAPIView):
+    """Galerie de l'artisan connecté : GET (ses photos), POST (multipart « image » + « caption »)."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request):
+        profile = _provider_profile(request.user)
+        return Response(PortfolioPhotoSerializer(profile.portfolio.all(), many=True, context={"request": request}).data)
+
+    def post(self, request):
+        profile = _provider_profile(request.user)
+        if profile.portfolio.count() >= PortfolioPhoto.MAX_PER_PROVIDER:
+            raise ValidationError(f"{PortfolioPhoto.MAX_PER_PROVIDER} photos maximum : supprimez-en une d'abord.")
+        s = PortfolioPhotoInSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        photo = PortfolioPhoto.objects.create(provider=profile, **s.validated_data)
+        return Response(
+            PortfolioPhotoSerializer(photo, context={"request": request}).data, status=status.HTTP_201_CREATED
+        )
+
+
+class ProviderPortfolioItemView(generics.GenericAPIView):
+    """DELETE /api/provider/portfolio/<id>/ : retirer une de ses photos (et le fichier)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        profile = _provider_profile(request.user)
+        photo = PortfolioPhoto.objects.filter(pk=pk, provider=profile).first()
+        if photo is None:
+            return Response({"detail": "Photo introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        photo.image.delete(save=False)
+        photo.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProviderCategoryViewSet(viewsets.ModelViewSet):
@@ -634,7 +674,7 @@ class PublicProviderViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
                 user__is_active=True,
             )
             .select_related("user", "base_wilaya")
-            .prefetch_related("categories__category")
+            .prefetch_related("categories__category", "portfolio")
         )
 
     @action(detail=True, methods=["get"])
@@ -648,7 +688,7 @@ class PublicProviderViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
             .order_by("-created_at")
         )
         page = self.paginate_queryset(qs)
-        data = ReviewSerializer(page if page is not None else qs, many=True).data
+        data = PublicReviewSerializer(page if page is not None else qs, many=True).data
         return self.get_paginated_response(data) if page is not None else Response(data)
 
 
