@@ -1,4 +1,4 @@
-"""Règles des points : débit à chaque contact, blocage, paiement BaridiMob, déblocage."""
+"""Règles des points : débit à chaque contact, blocage, paiement (carte ou BaridiMob), déblocage."""
 import logging
 
 from django.conf import settings
@@ -9,7 +9,26 @@ from rest_framework.exceptions import ValidationError
 
 from apps.marketplace.notifications import notify
 
+from . import chargily, slickpay
 from .models import Payment, PointEntry, PointsAccount
+
+GATEWAYS = {"slickpay": slickpay, "chargily": chargily}
+GATEWAY_ERRORS = (slickpay.SlickPayError, chargily.ChargilyError)
+
+
+def card_gateway():
+    """Service de paiement par carte à utiliser : (nom, module) ou (None, None) si aucun n'est configuré."""
+    wanted = (settings.CARD_GATEWAY or "").strip().lower()
+    if wanted in GATEWAYS:
+        return (wanted, GATEWAYS[wanted]) if GATEWAYS[wanted].enabled() else (None, None)
+    for name in ("slickpay", "chargily"):
+        if GATEWAYS[name].enabled():
+            return name, GATEWAYS[name]
+    return None, None
+
+
+def _gateway_of(payment):
+    return GATEWAYS.get(payment.gateway or "chargily", chargily)
 
 logger = logging.getLogger("ttb.billing")
 
@@ -30,7 +49,7 @@ def _fmt_da(amount):
 
 def blocked_message(account):
     return (
-        f"Compte bloqué : réglez {_fmt_da(account.amount_due_da)} par BaridiMob "
+        f"Compte bloqué : réglez {_fmt_da(account.amount_due_da)} par carte Edahabia / CIB ou BaridiMob "
         "(onglet Profil → Mes points) pour recevoir de nouvelles demandes."
     )
 
@@ -64,7 +83,7 @@ def charge_contact(profile, mission):
         notify(
             profile.user, "account_blocked", "Compte bloqué : paiement à faire",
             f"Vous avez atteint {account.points_due} points. "
-            f"Réglez {_fmt_da(account.amount_due_da)} par BaridiMob puis envoyez la capture dans l'app.",
+            f"Réglez {_fmt_da(account.amount_due_da)} dans l'app (Mes points) : par carte, ou par BaridiMob.",
             data={"points_due": account.points_due},
         )
     return account
@@ -75,8 +94,13 @@ def submit_payment(profile, *, screenshot, reference="", admin_url=""):
     account = account_for(profile)
     if account.points_due <= 0:
         raise ValidationError("Vous n'avez rien à payer pour l'instant.")
-    if account.payments.filter(status=Payment.Status.PENDING).exists():
+    pending = account.payments.filter(status=Payment.Status.PENDING)
+    if pending.filter(method=Payment.Method.BARIDIMOB).exists():
         raise ValidationError("Un paiement est déjà en cours de vérification.")
+    _close_card_pages(account, "Remplacé par un paiement BaridiMob.")
+    account.refresh_from_db()
+    if account.points_due <= 0:
+        raise ValidationError("Votre paiement par carte vient d'être reçu : il n'y a plus rien à payer.")
     payment = Payment.objects.create(
         account=account,
         points=account.points_due,
@@ -126,9 +150,10 @@ def approve_payment(payment, by=None):
         payment.reviewed_at = timezone.now()
         payment.reviewed_by = by
         payment.save(update_fields=["status", "reviewed_at", "reviewed_by"])
+        label = "par carte" if payment.method == Payment.Method.CARD else "BaridiMob"
         PointEntry.objects.create(
             account=account, kind=PointEntry.Kind.PAYMENT, due_delta=-credited, payment=payment,
-            note=f"Paiement BaridiMob {_fmt_da(payment.amount_da)}",
+            note=f"Paiement {label} {_fmt_da(payment.amount_da)}",
         )
     notify(
         account.provider.user, "payment_approved", "Paiement validé",
@@ -156,11 +181,145 @@ def reject_payment(payment, by=None, note=""):
     return payment
 
 
+# ---------------------------------------------------------------------------
+#  Paiement par carte Edahabia / CIB (Chargily Pay) : validé automatiquement
+# ---------------------------------------------------------------------------
+CARD_FAILED_STATUSES = {"failed", "canceled", "cancelled", "expired"}
+
+
+def _cancel_card(payment, note):
+    """Page de paiement par carte abandonnée / échouée / remplacée (sans notification)."""
+    Payment.objects.filter(pk=payment.pk, status=Payment.Status.PENDING).update(
+        status=Payment.Status.REJECTED, admin_note=note[:255], reviewed_at=timezone.now()
+    )
+
+
+def _close_card_pages(account, note):
+    """Avant un nouveau paiement : une ancienne page par carte a peut-être été payée entre-temps.
+    Sinon on la ferme ici ET chez le service de paiement (elle ne pourra plus être payée)."""
+    for old in account.payments.filter(status=Payment.Status.PENDING, method=Payment.Method.CARD):
+        sync_card_payment(old)
+        old.refresh_from_db()
+        if old.status == Payment.Status.PENDING:
+            if old.checkout_id:
+                _gateway_of(old).cancel_checkout(old.checkout_id)
+            _cancel_card(old, note)
+
+
+def _payer(profile):
+    user = profile.user
+    parts = (user.full_name or "").split()
+    return {
+        "firstname": parts[0] if parts else "Artisan",
+        "lastname": " ".join(parts[1:]) or (profile.business_name or "BRICOOL"),
+        "phone": str(user.phone or ""),
+        "email": user.email or "",
+        "address": profile.base_wilaya.name_fr if profile.base_wilaya_id else "Algérie",
+    }
+
+
+def start_card_payment(profile, *, success_url, failure_url, webhook_url="", locale="fr"):
+    """Crée une page de paiement (Slick-Pay ou Chargily) pour tous les points dus. Renvoie (paiement, adresse)."""
+    gateway_name, gateway = card_gateway()
+    if gateway is None:
+        raise ValidationError("Le paiement par carte n'est pas encore activé.")
+    account = account_for(profile)
+    if account.payments.filter(status=Payment.Status.PENDING, method=Payment.Method.BARIDIMOB).exists():
+        raise ValidationError("Un paiement BaridiMob est déjà en cours de vérification.")
+    _close_card_pages(account, "Remplacé par un nouveau paiement par carte.")
+    account.refresh_from_db()
+    if account.points_due <= 0:
+        raise ValidationError("Vous n'avez rien à payer pour l'instant.")
+
+    payment = Payment.objects.create(
+        account=account, method=Payment.Method.CARD, gateway=gateway_name,
+        points=account.points_due, amount_da=account.amount_due_da,
+    )
+    try:
+        checkout = gateway.create_checkout(
+            amount_da=payment.amount_da,
+            success_url=success_url,
+            failure_url=failure_url,
+            webhook_url=webhook_url,
+            metadata={"payment_id": str(payment.pk)},
+            locale=locale,
+            description=f"BRICOOL Pro : {payment.points} points",
+            payer=_payer(profile),
+        )
+    except GATEWAY_ERRORS as exc:
+        payment.delete()
+        raise ValidationError(str(exc)) from exc
+    payment.checkout_id = str(checkout["id"])
+    payment.save(update_fields=["checkout_id"])
+    return payment, checkout["checkout_url"]
+
+
+def _apply_checkout(payment, checkout):
+    """Applique le statut d'une page Chargily à notre paiement (payé -> points soldés)."""
+    status = str(checkout.get("status") or "").lower()
+    if status == "paid":
+        try:
+            paid_amount = int(float(checkout.get("amount") or 0))
+        except (TypeError, ValueError):
+            paid_amount = 0
+        if paid_amount < payment.amount_da:
+            logger.error("Paiement %s (%s) : montant payé %s < %s DA, non validé", payment.pk,
+                         payment.gateway or "chargily", paid_amount, payment.amount_da)
+            return payment
+        return approve_payment(payment)
+    if status in CARD_FAILED_STATUSES:
+        _cancel_card(payment, "Paiement par carte non abouti.")
+        payment.refresh_from_db()
+    return payment
+
+
+def sync_card_payment(payment):
+    """Relit le statut chez le service de paiement (retour dans l'app, webhook, ou vérification)."""
+    if payment.method != Payment.Method.CARD or payment.status != Payment.Status.PENDING or not payment.checkout_id:
+        return payment
+    try:
+        checkout = _gateway_of(payment).retrieve_checkout(payment.checkout_id)
+    except GATEWAY_ERRORS:
+        return payment  # on réessaiera plus tard
+    return _apply_checkout(payment, checkout)
+
+
+def handle_slickpay_notification(invoice_id):
+    """Slick-Pay nous prévient : on ne croit pas le message, on relit la facture chez eux."""
+    payment = Payment.objects.filter(
+        method=Payment.Method.CARD, gateway="slickpay", checkout_id=str(invoice_id or "")
+    ).first()
+    return sync_card_payment(payment) if payment else None
+
+
+def handle_chargily_event(event):
+    """Webhook Chargily (signature déjà vérifiée) : checkout.paid / checkout.failed / checkout.canceled."""
+    data = event.get("data") or {}
+    checkout_id = str(data.get("id") or "")
+    if not checkout_id:
+        return None
+    payment = Payment.objects.filter(
+        method=Payment.Method.CARD, checkout_id=checkout_id
+    ).exclude(gateway="slickpay").first()
+    if payment is None or payment.status != Payment.Status.PENDING:
+        return payment
+    kind = str(event.get("type") or "")
+    if kind == "checkout.paid" and not data.get("status"):
+        data = {**data, "status": "paid"}
+    elif kind in ("checkout.failed", "checkout.canceled") and not data.get("status"):
+        data = {**data, "status": "failed"}
+    return _apply_checkout(payment, data)
+
+
 def summary(profile):
     account = account_for(profile)
-    pending = account.payments.filter(status=Payment.Status.PENDING).first()
+    pending = account.payments.filter(status=Payment.Status.PENDING, method=Payment.Method.BARIDIMOB).first()
+    pending_card = account.payments.filter(status=Payment.Status.PENDING, method=Payment.Method.CARD).first()
     last = account.payments.exclude(status=Payment.Status.PENDING).first()
     return {
+        "card_enabled": card_gateway()[1] is not None,
+        "card_gateway": card_gateway()[0],
+        "pending_card_id": pending_card.pk if pending_card else None,
         "free_points": account.free_points,
         "points_due": account.points_due,
         "amount_due_da": account.amount_due_da,
@@ -187,6 +346,6 @@ def summary(profile):
 
 def _payment_json(p):
     return {
-        "id": p.id, "amount_da": p.amount_da, "points": p.points, "reference": p.reference,
+        "id": p.id, "method": p.method, "amount_da": p.amount_da, "points": p.points, "reference": p.reference,
         "status": p.status, "admin_note": p.admin_note, "created_at": p.created_at,
     }

@@ -193,6 +193,31 @@ BARIDIMOB_NAME = os.environ.get("BARIDIMOB_NAME", "")
 # Adresse qui reçoit un email à chaque capture de paiement envoyée
 PAYMENTS_NOTIFY_EMAIL = os.environ.get("PAYMENTS_NOTIFY_EMAIL", "")
 
+# Paiement des points par carte Edahabia / CIB via Chargily Pay (https://chargily.com).
+# Sans clé secrète, le bouton « Payer par carte » est masqué (BaridiMob reste disponible).
+CHARGILY_SECRET_KEY = os.environ.get("CHARGILY_SECRET_KEY", "")
+CHARGILY_MODE = os.environ.get("CHARGILY_MODE", "test")  # test | live
+# Ou via Slick-Pay (https://slick-pay.com, page SATIM CIB / Edahabia) : clé de l'espace
+# marchand « Clé API ». SANDBOX=false avec une clé de production (vrais paiements).
+SLICKPAY_PUBLIC_KEY = os.environ.get("SLICKPAY_PUBLIC_KEY", "")
+SLICKPAY_SANDBOX = env_bool("SLICKPAY_SANDBOX", False)
+# Service utilisé pour les cartes : "slickpay", "chargily", ou vide = le premier configuré
+# (Slick-Pay d'abord, puis Chargily).
+CARD_GATEWAY = os.environ.get("CARD_GATEWAY", "")
+# Adresse publique HTTPS du serveur (ex. https://api.bricool.dz) : Chargily y envoie
+# la confirmation de paiement (webhook). Vide en local : vérification au retour dans l'app.
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+
+# --- Protection des données (loi 18-07 modifiée par la loi 25-11) ---------------
+# Changer la version oblige chaque utilisateur à relire et accepter la politique.
+PRIVACY_POLICY_VERSION = os.environ.get("PRIVACY_POLICY_VERSION", "2026-11-25")
+LEGAL_NAME = os.environ.get("LEGAL_NAME", "BRICOOL [raison sociale à compléter]")
+LEGAL_ADDRESS = os.environ.get("LEGAL_ADDRESS", "[adresse à compléter]")
+PRIVACY_CONTACT_EMAIL = os.environ.get("PRIVACY_CONTACT_EMAIL", "[email à compléter]")
+PRIVACY_DPO = os.environ.get("PRIVACY_DPO", "")
+ANPDP_DECLARATION_REF = os.environ.get("ANPDP_DECLARATION_REF", "[numéro de déclaration à compléter]")
+PRIVACY_RETENTION_YEARS = int(os.environ.get("PRIVACY_RETENTION_YEARS", 3))
+
 # --- Email (console en dev : les emails s'affichent dans le terminal) ---
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")

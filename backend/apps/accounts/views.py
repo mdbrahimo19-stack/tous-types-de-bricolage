@@ -1,10 +1,12 @@
 from django.conf import settings
+from django.shortcuts import render
 from rest_framework import generics, serializers, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from . import privacy
 from .models import User
 from .otp import issue_otp, verify_otp
 from .sms import SMSError
@@ -59,6 +61,14 @@ class OTPVerifyView(APIView):
         data = s.validated_data
         phone, code, purpose = data["phone"], data["code"], data["purpose"]
 
+        # loi 18-07 : pas d'inscription sans consentement explicite (vérifié AVANT de consommer le code)
+        if purpose == "registration" and not data.get("accept_privacy"):
+            return Response(
+                {"detail": "Vous devez accepter la politique de confidentialité pour créer un compte.",
+                 "code": "privacy_required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if not verify_otp(phone, code, purpose):
             return Response(
                 {"detail": "Code invalide ou expiré."}, status=status.HTTP_400_BAD_REQUEST
@@ -84,6 +94,9 @@ class OTPVerifyView(APIView):
 
         if not user.is_active:
             return Response({"detail": "Compte suspendu."}, status=status.HTTP_403_FORBIDDEN)
+
+        if data.get("accept_privacy"):
+            user.accept_privacy(settings.PRIVACY_POLICY_VERSION)
 
         return Response(
             {
@@ -112,6 +125,73 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class MePrivacyView(APIView):
+    """POST /api/auth/me/privacy/ : l'utilisateur accepte la version actuelle de la politique de confidentialité."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request.user.accept_privacy(settings.PRIVACY_POLICY_VERSION)
+        return Response(UserSerializer(request.user, context={"request": request}).data)
+
+
+class MeExportView(APIView):
+    """GET /api/auth/me/export/ : droit d'accès, toutes les données de la personne (JSON)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "auth"
+
+    def get(self, request):
+        return Response(privacy.export_user_data(request.user, request))
+
+
+class MeDeleteView(APIView):
+    """POST /api/auth/me/delete/ {"confirm": true} : droit à l'effacement (anonymisation définitive)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.data.get("confirm") is not True:
+            return Response({"detail": "Confirmation manquante."}, status=status.HTTP_400_BAD_REQUEST)
+        reasons = privacy.deletion_blockers(request.user)
+        if reasons:
+            return Response({"detail": " ".join(reasons), "code": "deletion_blocked"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        privacy.anonymize_user(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def privacy_policy(request):
+    """Page publique « Politique de confidentialité » (français + arabe), liée depuis les deux apps."""
+    ai_abroad = bool(getattr(settings, "AI_ENABLED", False))
+    if ai_abroad:
+        transfer = (
+            "L'assistant intelligent (aide à décrire une demande, estimation de prix, aide) transmet les textes "
+            "que vous lui écrivez à un prestataire d'intelligence artificielle situé hors d'Algérie. Ce transfert "
+            "n'est effectué qu'avec l'autorisation préalable de l'ANPDP. N'écrivez pas d'informations sensibles "
+            "à l'assistant. Toutes les autres données restent traitées en Algérie."
+        )
+        transfer_ar = (
+            "يرسل المساعد الذكي النصوص التي تكتبها له إلى مزوّد ذكاء اصطناعي خارج الجزائر، ولا يتم ذلك إلا بترخيص "
+            "مسبق من السلطة الوطنية. لا تكتب معلومات حساسة للمساعد. تبقى بقية المعطيات معالجة في الجزائر."
+        )
+    else:
+        transfer = "Aucune donnée personnelle n'est transférée hors d'Algérie."
+        transfer_ar = "لا يتم نقل أي معطيات شخصية إلى خارج الجزائر."
+    context = {
+        "version": settings.PRIVACY_POLICY_VERSION,
+        "legal_name": settings.LEGAL_NAME,
+        "legal_address": settings.LEGAL_ADDRESS,
+        "contact_email": settings.PRIVACY_CONTACT_EMAIL,
+        "dpo": settings.PRIVACY_DPO,
+        "anpdp_ref": settings.ANPDP_DECLARATION_REF,
+        "retention_years": settings.PRIVACY_RETENTION_YEARS,
+        "transfer_text": transfer,
+        "transfer_text_ar": transfer_ar,
+    }
+    return render(request, "legal/confidentialite.html", context)
 
 
 MAX_PHOTO_BYTES = 5 * 1024 * 1024

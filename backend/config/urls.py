@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
+from apps.accounts.views import privacy_policy
+
 
 def health(_request):
     return JsonResponse({"status": "ok"})
@@ -12,6 +14,8 @@ def health(_request):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", health),
+    # page publique (liens depuis les deux apps et la fiche Play Store)
+    path("confidentialite/", privacy_policy, name="privacy-policy"),
     path("api/auth/", include("apps.accounts.urls")),
     path("api/", include("apps.catalog.urls")),
     path("api/", include("apps.locations.urls")),

@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_client.dart';
 import '../l10n.dart';
+import '../theme.dart';
 import '../widgets/common.dart';
 
 // ==========================================================================
@@ -116,6 +118,10 @@ class _PointsBody extends StatelessWidget {
                 subtitle: Text('${last['admin_note'] ?? ''}'),
               ),
             ),
+          if (p['card_enabled'] == true) ...[
+            _CardPayCard(p: p, onPaid: reload),
+            const SizedBox(height: 12),
+          ],
           _PayCard(p: p, onSent: reload),
         ],
         if (history.isNotEmpty) ...[
@@ -152,6 +158,126 @@ class _Figure extends StatelessWidget {
       Text(label, style: Theme.of(context).textTheme.bodySmall),
       Text(value, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
     ]);
+  }
+}
+
+/// Paiement par carte Edahabia / CIB (Chargily) : page sécurisée dans le navigateur,
+/// puis vérification automatique au retour dans l'application.
+class _CardPayCard extends StatefulWidget {
+  const _CardPayCard({required this.p, required this.onPaid});
+
+  final Json p;
+  final Future<void> Function() onPaid;
+
+  @override
+  State<_CardPayCard> createState() => _CardPayCardState();
+}
+
+class _CardPayCardState extends State<_CardPayCard> with WidgetsBindingObserver {
+  int? _paymentId;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _paymentId = (toNum(widget.p['pending_card_id']))?.toInt();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Retour dans l'app après la page de paiement : on vérifie tout de suite.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _paymentId != null && !_busy) _check(silent: true);
+  }
+
+  Future<void> _pay() async {
+    setState(() => _busy = true);
+    Uri? url;
+    final ok = await runAction(context, () async {
+      final r = (await context.api.post('/api/provider/payments/card/')) as Map;
+      _paymentId = (toNum(r['payment_id']))?.toInt();
+      url = Uri.tryParse('${r['checkout_url']}');
+    });
+    if (!mounted) return;
+    setState(() => _busy = false);
+    final target = url;
+    if (!ok || target == null) return;
+    if (!await launchUrl(target, mode: LaunchMode.externalApplication) && mounted) {
+      showInfo(context, context.tr('card_open_failed'));
+    }
+  }
+
+  Future<void> _check({bool silent = false}) async {
+    final id = _paymentId;
+    if (id == null) return;
+    setState(() => _busy = true);
+    String? status;
+    try {
+      final r = (await context.api.post('/api/provider/payments/$id/sync/')) as Map;
+      status = '${r['status']}';
+    } on ApiException catch (e) {
+      if (mounted && !silent) showError(context, e);
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (status == 'approved') {
+      showInfo(context, context.tr('card_ok'));
+      await widget.onPaid();
+    } else if (status == 'rejected') {
+      setState(() => _paymentId = null);
+      if (!silent) showInfo(context, context.tr('card_failed'));
+    } else if (!silent && status != null) {
+      showInfo(context, context.tr('card_waiting'));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppPalette.current;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(color: p.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              child: Icon(Icons.credit_card, color: p.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(context.tr('card_title'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                Text(context.tr('card_sub'), style: TextStyle(fontSize: 12.5, color: p.muted)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: _busy ? null : _pay,
+            icon: _busy
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.lock_outline),
+            label: Text(context.tr('card_button', {'amount': money(context, widget.p['amount_due_da'])})),
+          ),
+          if (_paymentId != null) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : () => _check(),
+              icon: const Icon(Icons.refresh),
+              label: Text(context.tr('card_check')),
+            ),
+          ],
+        ]),
+      ),
+    );
   }
 }
 
@@ -204,7 +330,8 @@ class _PayCardState extends State<_PayCard> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.tr('pay_title'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(context.tr(widget.p['card_enabled'] == true ? 'pay_title_or' : 'pay_title'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           Text(context.tr('pay_step1', {'amount': money(context, widget.p['amount_due_da'])})),
           if (rip.isNotEmpty)

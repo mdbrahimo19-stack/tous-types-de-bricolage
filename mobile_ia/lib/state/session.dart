@@ -32,6 +32,22 @@ class Session extends ChangeNotifier {
   /// Écrans artisan dans BRICOOL Pro, écrans client dans BRICOOL.
   bool get asProvider => AppFlavor.isPro;
 
+  /// Vrai tant que la version actuelle de la politique de confidentialité n'est pas acceptée.
+  bool get privacyRequired => user?['privacy_required'] == true;
+
+  /// Droit à l'effacement : le serveur anonymise le compte, puis déconnexion locale.
+  Future<void> deleteAccount() async {
+    await api.post('/api/auth/me/delete/', {'confirm': true});
+    await api.clearTokens();
+    await _clearUser();
+  }
+
+  Future<void> acceptPrivacy() async {
+    user = (await api.post('/api/auth/me/privacy/') as Map).cast<String, dynamic>();
+    await _cacheUser();
+    notifyListeners();
+  }
+
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     locale = prefs.getString(_kLocale) ??
@@ -67,11 +83,14 @@ class Session extends ChangeNotifier {
     required String code,
     required String purpose,
     String fullName = '',
+    bool acceptPrivacy = false,
   }) async {
     final data = await api.post('/api/auth/otp/verify/', {
       'phone': phone,
       'code': code,
       'purpose': purpose,
+      // consentement explicite (case cochée) : obligatoire à l'inscription
+      if (acceptPrivacy) 'accept_privacy': true,
       // BRICOOL Pro : le compte devient artisan (même s'il existait déjà comme client)
       'as_provider': AppFlavor.isPro,
       if (purpose == 'registration') ...{

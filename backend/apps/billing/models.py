@@ -3,7 +3,8 @@
 Chaque client qui accepte le devis d'un bricoleur lui coûte POINTS_PER_CONTACT points
 (1 point = POINT_VALUE_DA DA). Les POINTS_WELCOME_FREE premiers points sont offerts.
 Quand les points dus atteignent POINTS_BLOCK_AT, le compte est bloqué jusqu'à ce que
-le bricoleur paie par BaridiMob et que l'administrateur valide la capture du paiement.
+le bricoleur paie : par carte Edahabia / CIB (Chargily, validé automatiquement) ou par
+BaridiMob (l'administrateur valide la capture du paiement).
 """
 from django.conf import settings
 from django.db import models
@@ -44,11 +45,19 @@ class Payment(models.Model):
         APPROVED = "approved", _("Validé")
         REJECTED = "rejected", _("Refusé")
 
+    class Method(models.TextChoices):
+        BARIDIMOB = "baridimob", _("BaridiMob (capture)")
+        CARD = "card", _("Carte Edahabia / CIB")
+
     account = models.ForeignKey(PointsAccount, on_delete=models.CASCADE, related_name="payments")
+    method = models.CharField(_("moyen"), max_length=10, choices=Method.choices, default=Method.BARIDIMOB)
     points = models.PositiveIntegerField(_("points réglés"))
     amount_da = models.PositiveIntegerField(_("montant (DA)"))
     reference = models.CharField(_("référence BaridiMob"), max_length=80, blank=True)
-    screenshot = models.ImageField(_("capture BaridiMob"), upload_to="payments/%Y/%m/")
+    screenshot = models.ImageField(_("capture BaridiMob"), upload_to="payments/%Y/%m/", blank=True)
+    # paiement par carte : service utilisé (slickpay / chargily) et identifiant de sa page de paiement
+    gateway = models.CharField(_("service de paiement"), max_length=12, blank=True)
+    checkout_id = models.CharField(_("référence du paiement en ligne"), max_length=64, blank=True, db_index=True)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     admin_note = models.CharField(_("note (visible par le bricoleur)"), max_length=255, blank=True)
     created_at = models.DateTimeField(_("envoyé le"), auto_now_add=True)
@@ -58,8 +67,8 @@ class Payment(models.Model):
     )
 
     class Meta:
-        verbose_name = _("paiement BaridiMob")
-        verbose_name_plural = _("paiements BaridiMob")
+        verbose_name = _("paiement")
+        verbose_name_plural = _("paiements")
         ordering = ("-created_at",)
 
     def __str__(self):

@@ -13,14 +13,15 @@ def _image(url, height):
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ("created_at", "account", "amount_da", "points", "reference", "status", "thumb")
-    list_filter = ("status",)
-    search_fields = ("reference", "account__provider__user__phone", "account__provider__user__full_name",
+    list_display = ("created_at", "account", "method", "gateway", "amount_da", "points", "reference", "status",
+                    "thumb")
+    list_filter = ("status", "method", "gateway")
+    search_fields = ("reference", "checkout_id", "account__provider__user__phone", "account__provider__user__full_name",
                      "account__provider__business_name")
-    readonly_fields = ("account", "points", "amount_da", "reference", "capture", "status",
-                       "created_at", "reviewed_at", "reviewed_by")
-    fields = ("account", "amount_da", "points", "reference", "capture", "status", "admin_note",
-              "created_at", "reviewed_at", "reviewed_by")
+    readonly_fields = ("account", "method", "gateway", "points", "amount_da", "reference", "checkout_id", "capture",
+                       "status", "created_at", "reviewed_at", "reviewed_by")
+    fields = ("account", "method", "gateway", "amount_da", "points", "reference", "checkout_id", "capture", "status",
+              "admin_note", "created_at", "reviewed_at", "reviewed_by")
     actions = ["approve", "reject"]
     date_hierarchy = "created_at"
 

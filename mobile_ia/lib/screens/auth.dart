@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../api/api_client.dart';
 import '../flavor.dart';
 import '../l10n.dart';
+import '../privacy.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
 import '../widgets/floating_services.dart';
@@ -347,11 +348,16 @@ class _OtpScreenState extends State<OtpScreen> {
   late final _code = TextEditingController(text: widget.debugCode ?? '');
   final _name = TextEditingController();
   bool _busy = false;
+  bool _privacyAccepted = false;
 
   bool get _isRegistration => widget.purpose == 'registration';
 
   Future<void> _verify() async {
     if (!_form.currentState!.validate()) return;
+    if (_isRegistration && !_privacyAccepted) {
+      showInfo(context, context.tr('privacy_required_msg'));
+      return;
+    }
     setState(() => _busy = true);
     final ok = await runAction(context, () async {
       await context.read<Session>().verifyOtp(
@@ -359,6 +365,7 @@ class _OtpScreenState extends State<OtpScreen> {
         code: _code.text.trim(),
         purpose: widget.purpose,
         fullName: _name.text.trim(),
+        acceptPrivacy: _privacyAccepted,
       );
     });
     if (!mounted) return;
@@ -410,6 +417,11 @@ class _OtpScreenState extends State<OtpScreen> {
                 ),
                 validator: (v) =>
                     (v ?? '').trim().isEmpty ? context.tr('required') : null,
+              ),
+              const SizedBox(height: 12),
+              PrivacyCheckbox(
+                value: _privacyAccepted,
+                onChanged: (v) => setState(() => _privacyAccepted = v),
               ),
             ],
             const SizedBox(height: 20),

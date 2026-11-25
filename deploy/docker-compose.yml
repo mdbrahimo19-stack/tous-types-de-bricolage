@@ -56,7 +56,7 @@ services:
     depends_on:
       web:
         condition: service_healthy
-    command: sh -c "while true; do python manage.py dispatch_requests; python manage.py expire_requests; sleep 300; done"
+    command: sh -c "while true; do python manage.py dispatch_requests; python manage.py expire_requests; python manage.py purge_personal_data; sleep 300; done"
 
   caddy:
     image: caddy:2-alpine
