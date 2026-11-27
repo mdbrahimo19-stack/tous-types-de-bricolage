@@ -157,6 +157,23 @@ class PortfolioPhoto(models.Model):
         return self.caption or f"Réalisation #{self.pk}"
 
 
+class SiteText(models.Model):
+    """Texte du site vitrine modifiable depuis l'administration (remplace le texte par défaut)."""
+
+    key = models.CharField(_("texte"), max_length=40, unique=True)
+    fr = models.TextField(_("français"), blank=True)
+    ar = models.TextField(_("arabe"), blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("texte du site web")
+        verbose_name_plural = _("textes du site web")
+        ordering = ("key",)
+
+    def __str__(self):
+        return self.key
+
+
 class DailyVisit(models.Model):
     """Une ligne par personne, par jour et par application : statistiques de fréquentation.
 

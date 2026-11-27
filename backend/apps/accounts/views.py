@@ -220,6 +220,16 @@ _SITE_TEXT = {
             {"q": "Mes données sont-elles protégées ?", "a": "Oui, conformément à la loi 18-07. Votre numéro n'est partagé qu'après l'acceptation d'un devis."},
         ],
         "privacy": "Politique de confidentialité",
+        "stats_label": "BRICOOL en chiffres", "stat_artisans": "artisans vérifiés", "stat_missions": "missions réalisées",
+        "stat_wilayas": "wilayas couvertes", "stat_rating": "note moyenne des clients",
+        "promo_pro_title": "Vous êtes artisan ? Rejoignez BRICOOL Pro",
+        "promo_pro_text": "Recevez les demandes des clients près de chez vous. À l'inscription :",
+        "promo_pro_points": "points offerts.",
+        "artisans_short": "artisans", "featured_title": "Nos artisans les mieux notés",
+        "featured_sub": "Vérifiés par BRICOOL et recommandés par leurs clients.", "verified": "Vérifié",
+        "missions_short": "missions", "reviews_title": "Ce que disent les clients",
+        "promo_client_title": "Un problème à la maison ? BRICOOL s'en occupe",
+        "promo_client_text": "Gratuit pour les clients. Des devis en quelques minutes, d'artisans vérifiés près de chez vous.",
     },
     "ar": {
         "tagline": "اعثر على الحرفي المناسب بالقرب منك",
@@ -260,18 +270,95 @@ _SITE_TEXT = {
             {"q": "هل معطياتي محمية؟", "a": "نعم، طبقاً للقانون 18-07. لا يُشارك رقمك إلا بعد قبول عرض سعر."},
         ],
         "privacy": "سياسة الخصوصية",
+        "stats_label": "BRICOOL بالأرقام", "stat_artisans": "حرفي موثّق", "stat_missions": "مهمة منجزة",
+        "stat_wilayas": "ولاية مغطاة", "stat_rating": "متوسط تقييم الزبائن",
+        "promo_pro_title": "أنت حرفي؟ انضم إلى BRICOOL Pro",
+        "promo_pro_text": "استلم طلبات الزبائن القريبين منك. عند التسجيل:",
+        "promo_pro_points": "نقطة مجانية.",
+        "artisans_short": "حرفي", "featured_title": "أفضل حرفيينا تقييماً",
+        "featured_sub": "موثّقون من BRICOOL ويوصي بهم زبائنهم.", "verified": "موثّق",
+        "missions_short": "مهمة", "reviews_title": "ماذا يقول الزبائن",
+        "promo_client_title": "مشكلة في البيت؟ BRICOOL يتكفّل بها",
+        "promo_client_text": "مجاني للزبائن. عروض خلال دقائق من حرفيين موثّقين قريبين منك.",
     },
 }
 
 
+def _site_live_data(lang):
+    """Données publiques en direct pour le site : chiffres, services, meilleurs artisans, derniers avis.
+    Rien de privé : ni téléphone, ni adresse ; avis signés prénom + initiale."""
+    from django.db.models import Avg, Count, Q
+
+    from apps.catalog.models import Category
+    from apps.marketplace.models import Mission, Review
+    from apps.marketplace.serializers import PublicReviewSerializer
+
+    from .models import ProviderProfile
+
+    verified = ProviderProfile.objects.filter(
+        verification_status=ProviderProfile.Verification.APPROVED, user__is_active=True
+    )
+    reviews = Review.objects.filter(moderation_status=Review.Moderation.APPROVED)
+    rating = reviews.aggregate(avg=Avg("rating"))["avg"]
+    stats = {
+        "artisans": verified.count(),
+        "missions": Mission.objects.filter(status__in=("completed", "paid")).count(),
+        "wilayas": verified.exclude(base_wilaya=None).values("base_wilaya").distinct().count(),
+        "rating": f"{rating:.1f}".replace(".", ",") if rating else None,
+    }
+    name_field = "name_ar" if lang == "ar" else "name_fr"
+    categories = (
+        Category.objects.filter(parent__isnull=True)
+        .annotate(n=Count("providers", filter=Q(providers__provider__in=verified), distinct=True))
+        .order_by("-n", "order")[:12]
+    )
+    top = (
+        verified.select_related("user", "base_wilaya")
+        .prefetch_related("categories__category")
+        .order_by("-rating_avg", "-missions_count")[:6]
+    )
+    featured = []
+    for p in top:
+        cat = next(iter(p.categories.all()), None)
+        featured.append({
+            "name": p.business_name or p.user.full_name or "Artisan",
+            "photo": p.user.photo.url if p.user.photo else "",
+            "initials": "".join(w[0] for w in (p.business_name or p.user.full_name or "A").split()[:2]).upper(),
+            "trade": getattr(cat.category, name_field, "") if cat else "",
+            "wilaya": getattr(p.base_wilaya, name_field, "") if p.base_wilaya_id else "",
+            "rating": f"{p.rating_avg:.1f}".replace(".", ",") if p.reviews_count else "",
+            "missions": p.missions_count,
+        })
+    latest = [
+        dict(PublicReviewSerializer(r).data, target=(r.target.full_name or ""))
+        for r in reviews.select_related("author", "target").order_by("-created_at")[:3]
+    ]
+    return {
+        "stats": stats,
+        "categories": [{"name": getattr(c, name_field) or c.name_fr, "n": c.n} for c in categories],
+        "featured": featured,
+        "latest_reviews": latest,
+        "free_points": settings.POINTS_WELCOME_FREE,
+    }
+
+
 def landing(request):
-    """Site vitrine public (français / arabe) : présentation de BRICOOL et liens de téléchargement."""
+    """Site vitrine public (français / arabe) : présentation de BRICOOL, données en direct, téléchargement."""
+    from .models import SiteText
+
     lang = "ar" if request.GET.get("lang") == "ar" else "fr"
+    texts = dict(_SITE_TEXT[lang], announcement="")
+    # textes modifiés par l'équipe dans l'administration (Textes du site web)
+    for row in SiteText.objects.all():
+        value = (row.ar if lang == "ar" else row.fr).strip()
+        if value and row.key in texts and isinstance(texts[row.key], str):
+            texts[row.key] = value
     return render(request, "site/accueil.html", {
+        **_site_live_data(lang),
+        "t": texts,
         "lang": lang,
         "dir": "rtl" if lang == "ar" else "ltr",
         "other_lang": "fr" if lang == "ar" else "ar",
-        "t": _SITE_TEXT[lang],
         "tiles": [{"d": d, "label": ar if lang == "ar" else fr} for d, fr, ar in _SITE_TILES],
         "download_client": settings.DOWNLOAD_CLIENT_URL,
         "download_pro": settings.DOWNLOAD_PRO_URL,

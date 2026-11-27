@@ -68,6 +68,24 @@
   .app a.dl { display: inline-block; background: #fff; color: #1F1A17; text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 12px; }
   .services { display: flex; flex-wrap: wrap; gap: 10px; }
   .services span { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: 14px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stats div { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; text-align: center; }
+  .stats strong { display: block; font-size: 30px; font-weight: 800; color: var(--brand); line-height: 1.2; }
+  .stats span { color: var(--muted); font-size: 14px; }
+  .promo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+           background: #1B2A41; color: #fff; border-radius: 24px; padding: 26px 28px; }
+  .promo.client { background: #C2560A; }
+  .promo strong { font-size: 22px; } .promo p { margin: 6px 0 0; opacity: .9; }
+  .promo a.dl { background: #fff; color: #1F1A17; text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 12px; }
+  .services em { font-style: normal; color: var(--muted); font-weight: 500; }
+  .pros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .pros { grid-template-columns: 1fr; } }
+  .pro-card { display: flex; gap: 14px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+  .pro-card img, .avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: none; }
+  .avatar { display: grid; place-items: center; background: #8A5A3C; color: #fff; font-weight: 700; font-size: 20px; }
+  .pro-card .ok { color: var(--ok); font-size: 12px; font-weight: 700; }
+  .pro-card .meta { color: var(--muted); font-size: 13.5px; }
   details { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; margin-bottom: 10px; }
   summary { cursor: pointer; font-weight: 600; }
   details p { color: var(--muted); margin: 10px 0 0; }
@@ -77,6 +95,7 @@
 </style>
 </head>
 <body>
+{% if t.announcement %}<div role="status" style="background:var(--brand);color:var(--brand-ink);text-align:center;padding:10px 16px;font-weight:600">{{ t.announcement }}</div>{% endif %}
 <header class="top">
   <div class="wrap">
     <a class="logo" href="?lang={{ lang }}">BRI<span>COOL</span></a>
@@ -106,6 +125,15 @@
     </div>
   </div></div>
 
+  <section aria-label="{{ t.stats_label }}" style="padding:8px 0 24px"><div class="wrap">
+    <div class="stats">
+      <div><strong>{{ stats.artisans }}</strong><span>{{ t.stat_artisans }}</span></div>
+      <div><strong>{{ stats.missions }}</strong><span>{{ t.stat_missions }}</span></div>
+      <div><strong>{{ stats.wilayas }}</strong><span>{{ t.stat_wilayas }}</span></div>
+      <div><strong>{% if stats.rating %}{{ stats.rating }} ★{% else %}—{% endif %}</strong><span>{{ t.stat_rating }}</span></div>
+    </div>
+  </div></section>
+
   <section id="comment"><div class="wrap">
     <h2>{{ t.how_title }}</h2><p class="sub">{{ t.how_sub }}</p>
     <div class="cards3">{% for s in t.steps %}<div class="c"><span class="num">{{ forloop.counter }}</span><h3>{{ s.t }}</h3><p>{{ s.p }}</p></div>{% endfor %}</div>
@@ -129,8 +157,57 @@
   </div></section>
 
   <section><div class="wrap">
+    <div class="promo">
+      <div><strong>{{ t.promo_pro_title }}</strong><p>{{ t.promo_pro_text|stringformat:"s" }} {{ free_points }} {{ t.promo_pro_points }}</p></div>
+      <a class="dl" href="{{ download_pro }}">{{ t.dl_pro }}</a>
+    </div>
+  </div></section>
+
+  <section><div class="wrap">
     <h2>{{ t.services_title }}</h2><p class="sub">{{ t.services_sub }}</p>
+    {% if categories %}
+    <div class="services">{% for c in categories %}<span>{{ c.name }}{% if c.n %} <em>· {{ c.n }} {{ t.artisans_short }}</em>{% endif %}</span>{% endfor %}</div>
+    {% else %}
     <div class="services">{% for s in t.services %}<span>{{ s }}</span>{% endfor %}</div>
+    {% endif %}
+  </div></section>
+
+  {% if featured %}
+  <section><div class="wrap">
+    <h2>{{ t.featured_title }}</h2><p class="sub">{{ t.featured_sub }}</p>
+    <div class="pros">
+      {% for p in featured %}
+      <div class="pro-card">
+        {% if p.photo %}<img src="{{ p.photo }}" alt="" width="64" height="64">{% else %}<span class="avatar" aria-hidden="true">{{ p.initials }}</span>{% endif %}
+        <div>
+          <strong>{{ p.name }}</strong> <span class="ok">✔ {{ t.verified }}</span>
+          <div class="meta">{{ p.trade }}{% if p.wilaya %} · {{ p.wilaya }}{% endif %}</div>
+          <div class="meta">{% if p.rating %}★ {{ p.rating }} · {% endif %}{{ p.missions }} {{ t.missions_short }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div></section>
+  {% endif %}
+
+  {% if latest_reviews %}
+  <section><div class="wrap">
+    <h2>{{ t.reviews_title }}</h2>
+    <div class="cards3">
+      {% for r in latest_reviews %}
+      <div class="c"><div style="color:#E0A100" aria-label="{{ r.rating }}/5">{% for i in "12345" %}{% if forloop.counter <= r.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+        <p style="color:var(--ink);margin:8px 0">« {{ r.comment|truncatechars:160 }} »</p>
+        <p>{{ r.author_name }} → {{ r.target }}</p></div>
+      {% endfor %}
+    </div>
+  </div></section>
+  {% endif %}
+
+  <section><div class="wrap">
+    <div class="promo client">
+      <div><strong>{{ t.promo_client_title }}</strong><p>{{ t.promo_client_text }}</p></div>
+      <a class="dl" href="{{ download_client }}">{{ t.dl_client }}</a>
+    </div>
   </div></section>
 
   <section id="faq"><div class="wrap">

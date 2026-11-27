@@ -98,6 +98,16 @@ class OTPAuthFlowTests(TestCase):
         self.assertContains(ar, 'dir="rtl"')
         self.assertContains(ar, "اعثر على الحرفي المناسب")
 
+    def test_landing_texts_editable_in_admin(self):
+        from .models import SiteText
+
+        SiteText.objects.create(key="announcement", fr="Promo : 100 points offerts !", ar="")
+        SiteText.objects.create(key="h1", fr="Votre artisan en 1 clic", ar="")
+        page = self.client.get("/")
+        self.assertContains(page, "Promo : 100 points offerts !")
+        self.assertContains(page, "Votre artisan en 1 clic")
+        self.assertNotContains(self.client.get("/?lang=ar"), "Promo : 100 points")  # arabe vide = défaut
+
     def test_privacy_policy_page_is_public(self):
         page = self.client.get("/confidentialite/")
         self.assertEqual(page.status_code, 200)
