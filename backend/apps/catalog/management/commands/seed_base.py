@@ -65,6 +65,7 @@ CATEGORIES = [
     ("Pâtissière (gâteaux et gâteaux traditionnels)", "صانعة الحلويات", "cake", "forfait", None, None),
     ("Couturière", "خياطة", "sewing", "forfait", None, None),
     ("Photographe", "مصور", "camera", "forfait", None, None),
+    ("DJ pour fêtes et mariages", "دي جي للأعراس والحفلات", "music", "forfait", None, None),
     # transport, automobile
     ("Transport de marchandises", "نقل البضائع", "van", "forfait", None, None),
     ("Carrosserie auto", "هيكلة السيارات", "car-door", "forfait", None, None),

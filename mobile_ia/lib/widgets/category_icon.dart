@@ -44,6 +44,7 @@ const _icons = <String, IconData>{
   'scissors': Icons.content_cut,
   'chef': Icons.restaurant_outlined,
   'cake': Icons.cake_outlined,
+  'music': Icons.music_note_outlined,
   'sewing': Icons.checkroom_outlined,
   'camera': Icons.photo_camera_outlined,
   'van': Icons.airport_shuttle_outlined,
