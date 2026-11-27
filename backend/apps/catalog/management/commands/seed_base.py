@@ -63,6 +63,7 @@ CATEGORIES = [
     ("Cuisinier et traiteur", "طباخ وممون حفلات", "chef", "forfait", None, None),
     ("Cuisinière à domicile", "طباخة في المنزل", "chef", "forfait", None, None),
     ("Pâtissière (gâteaux et gâteaux traditionnels)", "صانعة الحلويات", "cake", "forfait", None, None),
+    ("Pâtisserie traditionnelle (makrout, baklawa, griwech…)", "الحلويات التقليدية (مقروط، بقلاوة، قريوش…)", "cake", "forfait", None, None),
     ("Couturière", "خياطة", "sewing", "forfait", None, None),
     ("Photographe", "مصور", "camera", "forfait", None, None),
     ("DJ pour fêtes et mariages", "دي جي للأعراس والحفلات", "music", "forfait", None, None),
