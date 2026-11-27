@@ -66,6 +66,8 @@ CATEGORIES = [
     ("Couturière", "خياطة", "sewing", "forfait", None, None),
     ("Photographe", "مصور", "camera", "forfait", None, None),
     ("DJ pour fêtes et mariages", "دي جي للأعراس والحفلات", "music", "forfait", None, None),
+    ("Location de tables et chaises pour fêtes", "كراء الطاولات والكراسي للحفلات", "chair", "forfait", None, None),
+    ("Location de tenues de fête (robes, caftans, costumes)", "كراء ألبسة الأعراس والحفلات", "dress", "forfait", None, None),
     # transport, automobile
     ("Transport de marchandises", "نقل البضائع", "van", "forfait", None, None),
     ("Carrosserie auto", "هيكلة السيارات", "car-door", "forfait", None, None),
