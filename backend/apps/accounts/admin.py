@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import ClientProfile, DailyVisit, DeviceToken, PhoneOTP, PortfolioPhoto, ProviderProfile, User
+from .models import ClientProfile, DailyVisit, DeviceToken, PhoneOTP, PortfolioPhoto, ProviderProfile, SiteText, User
 
 
 @admin.register(User)
@@ -59,6 +59,27 @@ class ProviderProfileAdmin(admin.ModelAdmin):
     def reject_selected(self, request, queryset):
         n = queryset.update(verification_status=ProviderProfile.Verification.REJECTED)
         self.message_user(request, f"{n} prestataire(s) refusé(s).")
+
+
+@admin.register(SiteText)
+class SiteTextAdmin(admin.ModelAdmin):
+    """Textes du site vitrine (bricool.dz) : ce qui est rempli ici remplace le texte par défaut.
+    Laisser vide = texte par défaut. « announcement » = bannière d'annonce en haut du site."""
+
+    list_display = ("key", "fr", "ar", "updated_at")
+    search_fields = ("key", "fr", "ar")
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "key":
+            from django import forms
+
+            from .views import _SITE_TEXT
+
+            keys = ["announcement"] + sorted(k for k, v in _SITE_TEXT["fr"].items() if isinstance(v, str))
+            labels = {"announcement": "announcement — bannière d'annonce (vide = cachée)"}
+            choices = [(k, labels.get(k, f"{k} — « {_SITE_TEXT['fr'].get(k, '')[:60]} »")) for k in keys]
+            return forms.ChoiceField(choices=choices, label="Texte à modifier")
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
 
 @admin.register(DailyVisit)

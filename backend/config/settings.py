@@ -220,6 +220,11 @@ PRIVACY_DPO = os.environ.get("PRIVACY_DPO", "")
 ANPDP_DECLARATION_REF = os.environ.get("ANPDP_DECLARATION_REF", "[numéro de déclaration à compléter]")
 PRIVACY_RETENTION_YEARS = int(os.environ.get("PRIVACY_RETENTION_YEARS", 3))
 
+# --- Site vitrine : boutons « Télécharger » (APK de test, puis liens Google Play) ---
+_APK_BASE = "https://github.com/mdbrahimo19-stack/tous-types-de-bricolage/releases/download/apk-test"
+DOWNLOAD_CLIENT_URL = os.environ.get("DOWNLOAD_CLIENT_URL", f"{_APK_BASE}/bricool.apk")
+DOWNLOAD_PRO_URL = os.environ.get("DOWNLOAD_PRO_URL", f"{_APK_BASE}/bricool-pro.apk")
+
 # --- Email (console en dev : les emails s'affichent dans le terminal) ---
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
