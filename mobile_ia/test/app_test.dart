@@ -30,8 +30,8 @@ void main() {
     final session = Session(ApiClient());
     await tester.pumpWidget(ChangeNotifierProvider.value(value: session, child: const TtbApp()));
     await tester.pump();
-    expect(find.text('Je cherche un artisan'), findsOneWidget);
-    await tester.tap(find.text('Je suis artisan'));
+    expect(find.text('Je cherche un professionnel'), findsOneWidget);
+    await tester.tap(find.text('Je suis professionnel (artisan, prestataire)'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(session.role, 'pro');
     expect(session.asProvider, isTrue);
