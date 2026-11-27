@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import ClientProfile, DeviceToken, PhoneOTP, PortfolioPhoto, ProviderProfile, User
+from .models import ClientProfile, DailyVisit, DeviceToken, PhoneOTP, PortfolioPhoto, ProviderProfile, User
 
 
 @admin.register(User)
@@ -59,6 +59,23 @@ class ProviderProfileAdmin(admin.ModelAdmin):
     def reject_selected(self, request, queryset):
         n = queryset.update(verification_status=ProviderProfile.Verification.REJECTED)
         self.message_user(request, f"{n} prestataire(s) refusé(s).")
+
+
+@admin.register(DailyVisit)
+class DailyVisitAdmin(admin.ModelAdmin):
+    """Fréquentation : une ligne par personne, par jour et par application (lecture seule)."""
+
+    list_display = ("day", "user", "app")
+    list_filter = ("app", "day")
+    search_fields = ("user__phone", "user__full_name")
+    date_hierarchy = "day"
+    list_select_related = ("user",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(ClientProfile)

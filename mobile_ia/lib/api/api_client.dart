@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import '../flavor.dart';
 
 typedef Json = Map<String, dynamic>;
 
@@ -157,6 +158,8 @@ class ApiClient {
   }) async {
     final headers = <String, String>{
       'Accept': 'application/json',
+      // quelle application parle au serveur (statistiques de fréquentation du tableau de bord)
+      'X-App': AppFlavor.isPro ? 'pro' : 'client',
       if (_access != null) 'Authorization': 'Bearer $_access',
     };
     if (multipart != null) {

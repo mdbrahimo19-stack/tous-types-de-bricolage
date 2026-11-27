@@ -27,6 +27,37 @@
   .ttb-card .meta { color: var(--body-quiet-color); font-size: .8rem; white-space: nowrap; text-align: right; }
   .ttb-card .empty { padding: 12px 14px; color: var(--body-quiet-color); }
   .ttb-card > footer { padding: 8px 14px; border-top: 1px solid var(--hairline-color); font-size: .85rem; }
+
+  /* --- Visiteurs : couleurs validées (clair / sombre, daltonisme) --- */
+  .ttb-charts { --c-client: #C2560A; --c-pro: #1F4FA0; --c-other: #8C8C8C; --c-signup: #4A5568; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .ttb-charts { --c-client: #E07A2E; --c-pro: #5B8DE0; --c-other: #8C8C8C; --c-signup: #A0AEC0; }
+  }
+  :root[data-theme="dark"] .ttb-charts { --c-client: #E07A2E; --c-pro: #5B8DE0; --c-other: #8C8C8C; --c-signup: #A0AEC0; }
+  .ttb-charts { grid-template-columns: repeat(auto-fill, minmax(min(460px, 100%), 1fr)); }
+  .ttb-chart { padding: 12px 14px 10px; }
+  .ttb-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 8px; font-size: .82rem; color: var(--body-quiet-color); }
+  .ttb-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: 6px; vertical-align: -1px; }
+  .ttb-plot { position: relative; height: 170px; display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 3px; align-items: end;
+              border-bottom: 1px solid var(--hairline-color); }
+  .ttb-plot .ymax { position: absolute; inset-inline-start: 0; top: -2px; font-size: .72rem; color: var(--body-quiet-color);
+                    border-top: 1px dashed var(--hairline-color); width: 100%; padding-top: 1px; pointer-events: none; }
+  .ttb-col { position: relative; height: 100%; display: flex; flex-direction: column-reverse; outline: none; }
+  .ttb-col::before { content: ""; position: absolute; inset: 0 -2px; }  /* zone de survol plus large que la barre */
+  .ttb-seg { display: block; width: 100%; }
+  .ttb-seg + .ttb-seg { border-bottom: 2px solid var(--body-bg); }
+  .ttb-col .ttb-seg:last-of-type { border-radius: 4px 4px 0 0; }
+  .ttb-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 5; white-space: nowrap;
+             background: var(--body-fg); color: var(--body-bg); font-size: .78rem; padding: 6px 8px; border-radius: 6px; line-height: 1.4; }
+  .ttb-col:hover .ttb-tip, .ttb-col:focus .ttb-tip { display: block; }
+  .ttb-col:hover .ttb-seg, .ttb-col:focus .ttb-seg { filter: brightness(1.12); }
+  .ttb-col:focus-visible { box-shadow: 0 0 0 2px var(--primary); border-radius: 4px; }
+  .ttb-xaxis { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 3px; font-size: .7rem; color: var(--body-quiet-color); margin-top: 4px; }
+  .ttb-xaxis span { white-space: nowrap; overflow: visible; }
+  .ttb-chart details { margin-top: 10px; font-size: .82rem; }
+  .ttb-chart table { width: 100%; margin-top: 6px; }
+  .ttb-chart td, .ttb-chart th { padding: 3px 6px; text-align: end; }
+  .ttb-chart td:first-child, .ttb-chart th:first-child { text-align: start; }
 </style>
 {% endblock %}
 
@@ -52,6 +83,90 @@
       {% endfor %}
     </div>
   </section>
+
+  {% with v=ttb_visitors %}
+  <section class="ttb-section">
+    <h2>Visiteurs de l'application</h2>
+    <div class="ttb-grid ttb-figures" style="margin-bottom:12px">
+      {% for f in v.figures %}
+      <a class="ttb-figure" href="{{ f.url }}">
+        <span class="v">{{ f.value }}</span>
+        <span class="l">{{ f.label }}</span>
+        {% if f.hint %}<span class="h">{{ f.hint }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="ttb-grid ttb-charts">
+      <div class="ttb-card ttb-chart">
+        <header style="padding:0 0 8px;border:0"><h3>Visiteurs par jour (30 jours)</h3></header>
+        <div class="ttb-legend" aria-hidden="true">
+          <span><i style="background:var(--c-client)"></i>BRICOOL (clients)</span>
+          <span><i style="background:var(--c-pro)"></i>BRICOOL Pro (artisans)</span>
+          {% if v.has_other %}<span><i style="background:var(--c-other)"></i>Ancienne version</span>{% endif %}
+        </div>
+        {% if v.max_visits %}
+        <div class="ttb-plot" role="img" aria-label="Visiteurs par jour sur 30 jours, maximum {{ v.max_visits }} par jour. Détail dans le tableau ci-dessous.">
+          <span class="ymax">{{ v.max_visits }}</span>
+          {% for d in v.days %}
+          <div class="ttb-col" tabindex="0">
+            {% if d.client %}<span class="ttb-seg" style="height:{{ d.client_pct|stringformat:'s' }}%;background:var(--c-client)"></span>{% endif %}
+            {% if d.pro %}<span class="ttb-seg" style="height:{{ d.pro_pct|stringformat:'s' }}%;background:var(--c-pro)"></span>{% endif %}
+            {% if d.other %}<span class="ttb-seg" style="height:{{ d.other_pct|stringformat:'s' }}%;background:var(--c-other)"></span>{% endif %}
+            <div class="ttb-tip"><strong>{{ d.date|date:"D d/m" }}</strong> — {{ d.total }} visiteur{{ d.total|pluralize }}<br>{{ d.client }} client{{ d.client|pluralize }} · {{ d.pro }} artisan{{ d.pro|pluralize }}{% if d.other %} · {{ d.other }} autre{{ d.other|pluralize }}{% endif %}</div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="ttb-xaxis" aria-hidden="true">{% for d in v.days %}<span>{% if d.show_label %}{{ d.date|date:"d/m" }}{% endif %}</span>{% endfor %}</div>
+        {% else %}
+          <div class="empty" style="padding:24px 0">Aucune visite enregistrée pour l'instant : les chiffres apparaîtront dès que les apps seront utilisées.</div>
+        {% endif %}
+        <details>
+          <summary>Voir le tableau</summary>
+          <table>
+            <thead><tr><th>Jour</th><th>Clients</th><th>Artisans</th>{% if v.has_other %}<th>Autres</th>{% endif %}<th>Total</th></tr></thead>
+            <tbody>{% for d in v.days reversed %}<tr><td>{{ d.date|date:"D d/m" }}</td><td>{{ d.client }}</td><td>{{ d.pro }}</td>{% if v.has_other %}<td>{{ d.other }}</td>{% endif %}<td>{{ d.total }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      </div>
+
+      <div class="ttb-card ttb-chart">
+        <header style="padding:0 0 8px;border:0"><h3>Nouveaux inscrits par jour (30 jours)</h3></header>
+        {% if v.max_signups %}
+        <div class="ttb-plot" role="img" aria-label="Inscriptions par jour sur 30 jours, maximum {{ v.max_signups }} par jour. Détail dans le tableau ci-dessous.">
+          <span class="ymax">{{ v.max_signups }}</span>
+          {% for d in v.days %}
+          <div class="ttb-col" tabindex="0">
+            {% if d.signups %}<span class="ttb-seg" style="height:{{ d.signups_pct|stringformat:'s' }}%;background:var(--c-signup)"></span>{% endif %}
+            <div class="ttb-tip"><strong>{{ d.date|date:"D d/m" }}</strong> — {{ d.signups }} inscription{{ d.signups|pluralize }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="ttb-xaxis" aria-hidden="true">{% for d in v.days %}<span>{% if d.show_label %}{{ d.date|date:"d/m" }}{% endif %}</span>{% endfor %}</div>
+        {% else %}
+          <div class="empty" style="padding:24px 0">Aucune inscription ces 30 derniers jours.</div>
+        {% endif %}
+        <details>
+          <summary>Voir le tableau</summary>
+          <table>
+            <thead><tr><th>Jour</th><th>Inscriptions</th></tr></thead>
+            <tbody>{% for d in v.days reversed %}<tr><td>{{ d.date|date:"D d/m" }}</td><td>{{ d.signups }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      </div>
+
+      <div class="ttb-card">
+        <header><h3>Dernières personnes actives</h3></header>
+        {% if v.recent %}
+          <ul>{% for r in v.recent %}<li><a href="{{ r.url }}">{{ r.text }}</a><span class="meta">{{ r.app }}<br>{{ r.date|date:"d/m H:i" }}</span></li>{% endfor %}</ul>
+          <footer><a href="{{ v.list_url }}">Toutes les visites →</a></footer>
+        {% else %}
+          <div class="empty">Personne pour l'instant.</div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endwith %}
 
   <section class="ttb-section">
     <h2>Chiffres clés</h2>
