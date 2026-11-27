@@ -67,6 +67,14 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Revenir à l'écran de choix (avant la connexion) : « je me suis trompé d'espace ».
+  Future<void> clearRole() async {
+    AppFlavor.role = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kRole);
+    notifyListeners();
+  }
+
   /// Un client connecté passe à l'espace artisan : son compte devient aussi artisan (à valider par l'équipe).
   Future<void> becomeProvider() async {
     if (!isProvider) {
