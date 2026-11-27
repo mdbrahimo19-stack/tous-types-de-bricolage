@@ -142,10 +142,10 @@
   <section id="apps"><div class="wrap">
     <h2>{{ t.apps_title }}</h2><p class="sub">{{ t.apps_sub }}</p>
     <div class="apps">
-      <div class="app client"><h3>BRICOOL</h3><div>{{ t.client_for }}</div>
+      <div class="app client"><h3>{{ t.space_client }}</h3><div>{{ t.client_for }}</div>
         <ul>{% for li in t.client_points %}<li>{{ li }}</li>{% endfor %}</ul>
         <a class="dl" href="{{ download_client }}">{{ t.dl_client }}</a></div>
-      <div class="app pro"><h3>BRICOOL Pro</h3><div>{{ t.pro_for }}</div>
+      <div class="app pro"><h3>{{ t.space_pro }}</h3><div>{{ t.pro_for }}</div>
         <ul>{% for li in t.pro_points %}<li>{{ li }}</li>{% endfor %}</ul>
         <a class="dl" href="{{ download_pro }}">{{ t.dl_pro }}</a></div>
     </div>
