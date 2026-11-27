@@ -69,8 +69,9 @@ class ApiClient {
   }
 
   // --- verbes -----------------------------------------------------------
-  Future<dynamic> get(String path, {Map<String, String>? query}) =>
-      _send('GET', path, query: query);
+  /// [timeout] : délai maximum (par défaut 90 s, pour les appels IA). Le démarrage utilise un délai court.
+  Future<dynamic> get(String path, {Map<String, String>? query, Duration? timeout}) =>
+      _send('GET', path, query: query, timeout: timeout);
 
   Future<dynamic> post(String path, [Object? body]) => _send('POST', path, body: body ?? const {});
 
@@ -120,6 +121,7 @@ class ApiClient {
     ({Map<String, String> fields, String fileField, File file})? multipart,
     String? absoluteUrl,
     bool retried = false,
+    Duration? timeout,
   }) async {
     final uri = absoluteUrl != null
         ? Uri.parse(absoluteUrl)
@@ -127,7 +129,7 @@ class ApiClient {
 
     http.Response resp;
     try {
-      resp = await _rawSend(method, uri, body: body, multipart: multipart).timeout(_timeout);
+      resp = await _rawSend(method, uri, body: body, multipart: multipart).timeout(timeout ?? _timeout);
     } on SocketException {
       throw ApiException(_unreachable);
     } on TimeoutException {
@@ -139,7 +141,8 @@ class ApiClient {
     if (resp.statusCode == 401 && !retried && _refresh != null && !_isAuthPath(uri)) {
       if (await _refreshAccess()) {
         return _send(method, path,
-            query: query, body: body, multipart: multipart, absoluteUrl: absoluteUrl, retried: true);
+            query: query, body: body, multipart: multipart, absoluteUrl: absoluteUrl, retried: true,
+            timeout: timeout);
       }
       await clearTokens();
       onSessionExpired?.call();

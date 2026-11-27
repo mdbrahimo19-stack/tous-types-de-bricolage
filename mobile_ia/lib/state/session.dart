@@ -48,7 +48,16 @@ class Session extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Vrai pendant le démarrage (l'app affiche un écran de chargement au lieu de rester figée).
+  bool initializing = false;
+
+  /// Délai maximum pour joindre le serveur au démarrage : au-delà, on continue avec le profil en cache
+  /// (ex. l'ordinateur-serveur a changé de réseau : l'app doit quand même s'ouvrir).
+  static const startupTimeout = Duration(seconds: 8);
+
   Future<void> init() async {
+    initializing = true;
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     locale = prefs.getString(_kLocale) ??
         (PlatformDispatcher.instance.locale.languageCode == 'ar' ? 'ar' : 'fr');
@@ -56,7 +65,7 @@ class Session extends ChangeNotifier {
     await api.loadTokens();
     if (api.hasSession) {
       try {
-        user = (await api.get('/api/auth/me/') as Map).cast<String, dynamic>();
+        user = (await api.get('/api/auth/me/', timeout: startupTimeout) as Map).cast<String, dynamic>();
         await _cacheUser();
       } on ApiException catch (e) {
         if (e.status == 401) {
@@ -69,6 +78,7 @@ class Session extends ChangeNotifier {
       }
     }
     ready = true;
+    initializing = false;
     notifyListeners();
   }
 
