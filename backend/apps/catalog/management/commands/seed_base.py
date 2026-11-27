@@ -61,6 +61,9 @@ CATEGORIES = [
     ("Coiffure à domicile", "حلاقة وتجميل في المنزل", "scissors", "forfait", None, None),
     # événements
     ("Cuisinier et traiteur", "طباخ وممون حفلات", "chef", "forfait", None, None),
+    ("Cuisinière à domicile", "طباخة في المنزل", "chef", "forfait", None, None),
+    ("Pâtissière (gâteaux et gâteaux traditionnels)", "صانعة الحلويات", "cake", "forfait", None, None),
+    ("Couturière", "خياطة", "sewing", "forfait", None, None),
     ("Photographe", "مصور", "camera", "forfait", None, None),
     # transport, automobile
     ("Transport de marchandises", "نقل البضائع", "van", "forfait", None, None),
