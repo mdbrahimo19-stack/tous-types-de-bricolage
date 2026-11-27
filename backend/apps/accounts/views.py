@@ -137,6 +137,16 @@ class MePrivacyView(APIView):
         return Response(UserSerializer(request.user, context={"request": request}).data)
 
 
+class MeBecomeProviderView(APIView):
+    """POST /api/auth/me/become-provider/ : un client passe à l'espace artisan (profil « en attente »)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user, _ = get_or_create_user_after_otp(request.user.phone, as_provider=True)
+        return Response(UserSerializer(user, context={"request": request}).data)
+
+
 class MeExportView(APIView):
     """GET /api/auth/me/export/ : droit d'accès, toutes les données de la personne (JSON)."""
 

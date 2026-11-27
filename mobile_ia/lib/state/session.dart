@@ -55,10 +55,32 @@ class Session extends ChangeNotifier {
   /// (ex. l'ordinateur-serveur a changé de réseau : l'app doit quand même s'ouvrir).
   static const startupTimeout = Duration(seconds: 8);
 
+  static const _kRole = 'app_role';
+
+  /// Espace choisi : 'client' ou 'pro' ; null = l'écran de choix s'affiche au premier lancement.
+  String? get role => AppFlavor.role;
+
+  Future<void> setRole(String value) async {
+    AppFlavor.role = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kRole, value);
+    notifyListeners();
+  }
+
+  /// Un client connecté passe à l'espace artisan : son compte devient aussi artisan (à valider par l'équipe).
+  Future<void> becomeProvider() async {
+    if (!isProvider) {
+      user = (await api.post('/api/auth/me/become-provider/') as Map).cast<String, dynamic>();
+      await _cacheUser();
+    }
+    await setRole('pro');
+  }
+
   Future<void> init() async {
     initializing = true;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
+    AppFlavor.role ??= prefs.getString(_kRole);
     locale = prefs.getString(_kLocale) ??
         (PlatformDispatcher.instance.locale.languageCode == 'ar' ? 'ar' : 'fr');
 

@@ -20,6 +20,23 @@ class _NoAnimations implements AccessibilityFeatures {
 }
 
 void main() {
+  // app unique : l'espace « client » est déjà choisi (l'écran de choix a son propre test)
+  setUp(() => AppFlavor.role = 'client');
+  tearDown(() => AppFlavor.role = null);
+
+  testWidgets('premier lancement : choix de l\'espace client ou artisan', (tester) async {
+    AppFlavor.role = null;
+    SharedPreferences.setMockInitialValues({});
+    final session = Session(ApiClient());
+    await tester.pumpWidget(ChangeNotifierProvider.value(value: session, child: const TtbApp()));
+    await tester.pump();
+    expect(find.text('Je cherche un artisan'), findsOneWidget);
+    await tester.tap(find.text('Je suis artisan'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(session.role, 'pro');
+    expect(session.asProvider, isTrue);
+  });
+
   testWidgets('connexion en français puis bascule en arabe (RTL)', (
     tester,
   ) async {

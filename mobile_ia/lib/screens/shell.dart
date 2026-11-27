@@ -119,6 +119,15 @@ class ProfileScreen extends StatelessWidget {
             onTap: () => showServerDialog(context),
           ),
           ListTile(
+            leading: const Icon(Icons.swap_horiz),
+            title: Text(context.tr(session.asProvider ? 'switch_to_client' : 'switch_to_pro')),
+            subtitle: Text(context.tr(session.asProvider ? 'switch_to_client_sub' : 'switch_to_pro_sub')),
+            onTap: () => runAction(
+              context,
+              () => session.asProvider ? session.setRole('client') : session.becomeProvider(),
+            ),
+          ),
+          ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: Text(context.tr('privacy_title')),
             subtitle: Text(context.tr('privacy_menu_sub')),
