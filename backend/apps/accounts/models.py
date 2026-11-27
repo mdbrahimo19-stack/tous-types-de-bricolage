@@ -157,6 +157,31 @@ class PortfolioPhoto(models.Model):
         return self.caption or f"Réalisation #{self.pk}"
 
 
+class DailyVisit(models.Model):
+    """Une ligne par personne, par jour et par application : statistiques de fréquentation.
+
+    Donnée minimale (pas d'heure précise, pas de position) ; effacée après 13 mois."""
+
+    class App(models.TextChoices):
+        CLIENT = "client", _("BRICOOL (client)")
+        PRO = "pro", _("BRICOOL Pro (artisan)")
+        OTHER = "", _("Autre / ancienne version")
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="visits")
+    day = models.DateField(_("jour"), db_index=True)
+    app = models.CharField(_("application"), max_length=8, choices=App.choices, blank=True, default="")
+    hits = models.PositiveIntegerField(_("requêtes"), default=1)
+
+    class Meta:
+        verbose_name = _("visite")
+        verbose_name_plural = _("visites")
+        ordering = ("-day",)
+        constraints = [models.UniqueConstraint(fields=["user", "day", "app"], name="uniq_visite_par_jour")]
+
+    def __str__(self):
+        return f"{self.user} · {self.day} · {self.app or 'autre'}"
+
+
 class PhoneOTP(models.Model):
     class Purpose(models.TextChoices):
         REGISTRATION = "registration", _("Inscription")

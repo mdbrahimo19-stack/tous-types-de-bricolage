@@ -84,6 +84,10 @@ def export_user_data(user, request=None):
         "avis_ecrits": _rows(Review.objects.filter(author=user)),
         "avis_recus": _rows(Review.objects.filter(target=user)),
         "notifications": _rows(Notification.objects.filter(recipient=user)[:200]),
+        "jours_de_visite": [
+            {"jour": _value(v.day), "application": v.app or "autre"}
+            for v in _model("accounts.DailyVisit").objects.filter(user=user)[:400]
+        ],
     }
     profile = getattr(user, "provider_profile", None)
     if profile is not None:
@@ -136,6 +140,7 @@ def anonymize_user(user):
     ServiceRequest.objects.filter(client=user, status__in=OPEN_REQUEST_STATUSES).update(status="cancelled")
     Address.objects.filter(user=user).delete()
     Notification.objects.filter(recipient=user).delete()
+    _model("accounts.DailyVisit").objects.filter(user=user).delete()
     DeviceToken.objects.filter(user=user).delete()
     PhoneOTP.objects.filter(phone=real_phone).delete()
 
@@ -175,6 +180,8 @@ def purge(now=None, dry_run=False):
 
     otps = PhoneOTP.objects.filter(created_at__lt=now - timedelta(days=1))
     notifications = Notification.objects.filter(created_at__lt=now - timedelta(days=180))
+    # statistiques de fréquentation : gardées 13 mois (comparaison d'une année sur l'autre)
+    _model("accounts.DailyVisit").objects.filter(day__lt=(now - timedelta(days=400)).date()).delete()
     limit = now - timedelta(days=365 * settings.PRIVACY_RETENTION_YEARS)
     inactive = (
         User.objects.filter(is_active=True, is_staff=False)

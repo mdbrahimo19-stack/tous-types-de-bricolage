@@ -132,6 +132,22 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('serveur injoignable au démarrage : écran de chargement puis connexion', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final session = Session(ApiClient());
+    session.initializing = true; // démarrage en cours
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(value: session, child: const TtbApp()),
+    );
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('Continuer'), findsNothing);
+
+    session.initializing = false; // démarrage terminé (sans compte enregistré)
+    session.notifyListeners();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Continuer'), findsOneWidget);
+  });
+
   testWidgets('petit écran et clavier ouvert : aucun débordement', (
     tester,
   ) async {

@@ -3,12 +3,13 @@
 from datetime import timedelta
 
 from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.urls import reverse
 from django.utils import timezone
 
 from django.conf import settings
 
-from apps.accounts.models import ProviderProfile, User
+from apps.accounts.models import DailyVisit, ProviderProfile, User
 from apps.billing.models import Payment, PointsAccount
 from apps.marketplace.models import AuditLog, Message, Mission, Quote, Review, ServiceRequest
 
@@ -226,9 +227,82 @@ def recent_activity():
     ]
 
 
+CHART_DAYS = 30
+
+
+def _distinct_visitors(since, **filters):
+    return DailyVisit.objects.filter(day__gte=since, **filters).values("user").distinct().count()
+
+
+def visitors(now):
+    """Fréquentation des deux applications : chiffres du jour / 7 j / 30 j et deux graphiques sur 30 jours."""
+    today = timezone.localdate(now)
+    start = today - timedelta(days=CHART_DAYS - 1)
+
+    by_day = {}
+    for row in (
+        DailyVisit.objects.filter(day__gte=start)
+        .values("day", "app")
+        .annotate(n=Count("user", distinct=True))
+    ):
+        by_day.setdefault(row["day"], {})[row["app"]] = row["n"]
+    signups = {
+        row["d"]: row["n"]
+        for row in User.objects.filter(date_joined__date__gte=start)
+        .annotate(d=TruncDate("date_joined"))
+        .values("d")
+        .annotate(n=Count("id"))
+    }
+
+    days = []
+    for i in range(CHART_DAYS):
+        d = start + timedelta(days=i)
+        counts = by_day.get(d, {})
+        client, pro, other = counts.get("client", 0), counts.get("pro", 0), counts.get("", 0)
+        days.append({
+            "date": d, "client": client, "pro": pro, "other": other,
+            "total": client + pro + other, "signups": signups.get(d, 0),
+            "show_label": i % 5 == 0 or i == CHART_DAYS - 1,
+        })
+    max_visits = max((x["total"] for x in days), default=0) or 1
+    max_signups = max((x["signups"] for x in days), default=0) or 1
+    for x in days:
+        x["client_pct"] = round(100 * x["client"] / max_visits, 1)
+        x["pro_pct"] = round(100 * x["pro"] / max_visits, 1)
+        x["other_pct"] = round(100 * x["other"] / max_visits, 1)
+        x["signups_pct"] = round(100 * x["signups"] / max_signups, 1)
+
+    week = today - timedelta(days=6)
+    figures = [
+        {
+            "label": "Visiteurs aujourd'hui",
+            "value": _distinct_visitors(today),
+            "hint": f"{_distinct_visitors(today, app='client')} clients · {_distinct_visitors(today, app='pro')} artisans",
+        },
+        {"label": "Visiteurs (7 jours)", "value": _distinct_visitors(week)},
+        {"label": "Visiteurs (30 jours)", "value": _distinct_visitors(start)},
+        {"label": "Inscrits aujourd'hui", "value": signups.get(today, 0)},
+    ]
+    recent = User.objects.filter(last_seen_at__isnull=False).order_by("-last_seen_at")[:RECENT_LIMIT]
+    return {
+        "figures": [dict(f, url=_changelist(DailyVisit)) for f in figures],
+        "days": days,
+        "max_visits": max_visits if any(x["total"] for x in days) else 0,
+        "max_signups": max_signups if any(x["signups"] for x in days) else 0,
+        "has_other": any(x["other"] for x in days),
+        "recent": [
+            {"text": f"{u} — {u.phone}", "date": u.last_seen_at, "url": _change(u),
+             "app": "Artisan" if u.is_provider else "Client"}
+            for u in recent
+        ],
+        "list_url": _changelist(DailyVisit),
+    }
+
+
 def build_dashboard():
     now = timezone.now()
     return {
+        "ttb_visitors": visitors(now),
         "ttb_figures": key_figures(now),
         "ttb_todo": todo(now),
         "ttb_recent": recent_activity(),

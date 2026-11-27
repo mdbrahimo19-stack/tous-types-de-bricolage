@@ -17,8 +17,38 @@ Future<void> main() async {
   await initializeDateFormatting('ar');
   await ServerConfig.load();
   final session = Session(ApiClient());
-  await session.init();
+  // l'app s'affiche tout de suite (écran de chargement) : elle ne reste jamais figée
+  // si le serveur est injoignable au démarrage
   runApp(ChangeNotifierProvider.value(value: session, child: const TtbApp()));
+  await session.init();
+}
+
+/// Écran de démarrage (quelques secondes au plus) : nom de l'app sur son dégradé + chargement.
+class _StartupScreen extends StatelessWidget {
+  const _StartupScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: AppFlavor.heroGradient,
+          ),
+        ),
+        child: Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(AppFlavor.name,
+                style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 24),
+            const SizedBox(width: 28, height: 28, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 class TtbApp extends StatelessWidget {
@@ -40,7 +70,11 @@ class TtbApp extends StatelessWidget {
       // orange (BRICOOL) ou bleu nuit (BRICOOL Pro), police Poppins : voir theme.dart
       theme: buildAppTheme(),
       // la clé force un nouvel arbre de navigation à la connexion / déconnexion
-      home: session.loggedIn ? const HomeShell(key: ValueKey('home')) : const PhoneScreen(key: ValueKey('auth')),
+      home: session.initializing
+          ? const _StartupScreen()
+          : session.loggedIn
+              ? const HomeShell(key: ValueKey('home'))
+              : const PhoneScreen(key: ValueKey('auth')),
     );
   }
 }
