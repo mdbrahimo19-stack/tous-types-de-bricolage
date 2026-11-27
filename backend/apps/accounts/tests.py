@@ -89,6 +89,15 @@ class OTPAuthFlowTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.data["privacy_required"])
 
+    def test_landing_site_fr_and_ar(self):
+        page = self.client.get("/")
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "Trouvez le bon artisan")
+        self.assertContains(page, "bricool-pro.apk")
+        ar = self.client.get("/?lang=ar")
+        self.assertContains(ar, 'dir="rtl"')
+        self.assertContains(ar, "اعثر على الحرفي المناسب")
+
     def test_privacy_policy_page_is_public(self):
         page = self.client.get("/confidentialite/")
         self.assertEqual(page.status_code, 200)
