@@ -69,10 +69,9 @@ jobs:
         run: |
           EXTRA=""
           if [ -n "$API_URL" ]; then EXTRA="--dart-define=API_URL=$API_URL"; fi
+          # une seule app BRICOOL : l'utilisateur choisit l'espace client ou artisan au premier lancement
           flutter build apk --release --flavor client --target-platform android-arm64 $EXTRA
-          flutter build apk --release --flavor pro --target-platform android-arm64 $EXTRA
           cp build/app/outputs/flutter-apk/app-client-release.apk bricool.apk
-          cp build/app/outputs/flutter-apk/app-pro-release.apk bricool-pro.apk
 
       # Empreinte du certificat : doit être identique d'une compilation à l'autre.
       # (informatif : ne bloque jamais la publication)
@@ -85,9 +84,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: bricool-apk
-          path: |
-            mobile_ia/bricool.apk
-            mobile_ia/bricool-pro.apk
+          path: mobile_ia/bricool.apk
           retention-days: 14
 
       # APK téléchargeables directement depuis le téléphone (onglet Releases).
@@ -96,8 +93,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="bricool.apk = app des clients · bricool-pro.apk = app des artisans — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
+          NOTES="bricool.apk = application BRICOOL (espace client + espace artisan) — branche ${GITHUB_REF_NAME}, commit ${GITHUB_SHA::7}. Remplacée à chaque compilation."
           gh release delete apk-test --yes --cleanup-tag 2>/dev/null || true
-          gh release create apk-test bricool.apk bricool-pro.apk \
+          gh release create apk-test bricool.apk \
             --prerelease --target "$GITHUB_SHA" \
             --title "APK de test (dernière compilation)" --notes "$NOTES"

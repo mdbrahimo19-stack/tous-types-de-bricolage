@@ -71,7 +71,13 @@ class _PhoneScreenState extends State<PhoneScreen> {
     final showMarquee = !compact && availH > 640;
     const onHero = Colors.white;
 
-    return Scaffold(
+    // bouton « retour » du téléphone : revenir au choix de l'espace au lieu de quitter l'app
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) session.clearRole();
+      },
+      child: Scaffold(
       body: DecoratedBox(
         // dégradé : orange « chantier » (BRICOOL) ou bleu nuit (BRICOOL Pro)
         decoration: BoxDecoration(
@@ -92,6 +98,13 @@ class _PhoneScreenState extends State<PhoneScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   children: [
+                    // retour au choix de l'espace (client / artisan)
+                    IconButton(
+                      tooltip: context.tr('change_space'),
+                      color: onHero,
+                      icon: const BackButtonIcon(),
+                      onPressed: session.clearRole,
+                    ),
                     IconButton(
                       tooltip: context.tr('server'),
                       color: onHero,
@@ -301,6 +314,7 @@ class _PhoneScreenState extends State<PhoneScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 }

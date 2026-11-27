@@ -223,7 +223,8 @@ PRIVACY_RETENTION_YEARS = int(os.environ.get("PRIVACY_RETENTION_YEARS", 3))
 # --- Site vitrine : boutons « Télécharger » (APK de test, puis liens Google Play) ---
 _APK_BASE = "https://github.com/mdbrahimo19-stack/tous-types-de-bricolage/releases/download/apk-test"
 DOWNLOAD_CLIENT_URL = os.environ.get("DOWNLOAD_CLIENT_URL", f"{_APK_BASE}/bricool.apk")
-DOWNLOAD_PRO_URL = os.environ.get("DOWNLOAD_PRO_URL", f"{_APK_BASE}/bricool-pro.apk")
+# une seule app : les artisans téléchargent la même app (espace artisan choisi au premier lancement)
+DOWNLOAD_PRO_URL = os.environ.get("DOWNLOAD_PRO_URL", DOWNLOAD_CLIENT_URL)
 
 # --- Email (console en dev : les emails s'affichent dans le terminal) ---
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")

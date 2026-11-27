@@ -10,7 +10,10 @@ class AppFlavor {
   /// Pour les tests : force 'client' ou 'pro' sans recompiler.
   static String? debugOverride;
 
-  static bool get isPro => (debugOverride ?? appFlavor) == 'pro';
+  /// Espace choisi par l'utilisateur dans l'app unique BRICOOL ('client' ou 'pro', null = pas encore choisi).
+  static String? role;
+
+  static bool get isPro => (debugOverride ?? role ?? appFlavor) == 'pro';
 
   static String get name => isPro ? 'BRICOOL Pro' : 'BRICOOL';
 

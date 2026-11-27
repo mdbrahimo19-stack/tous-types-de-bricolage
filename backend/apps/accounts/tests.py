@@ -93,7 +93,9 @@ class OTPAuthFlowTests(TestCase):
         page = self.client.get("/")
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, "Trouvez le bon artisan")
-        self.assertContains(page, "bricool-pro.apk")
+        self.assertContains(page, "bricool.apk")
+        self.assertNotContains(page, "bricool-pro.apk")  # une seule application
+        self.assertContains(page, "Une application, deux espaces")
         ar = self.client.get("/?lang=ar")
         self.assertContains(ar, 'dir="rtl"')
         self.assertContains(ar, "اعثر على الحرفي المناسب")
