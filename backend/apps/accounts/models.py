@@ -33,6 +33,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Language(models.TextChoices):
         FR = "fr", _("Français")
         AR = "ar", _("العربية")
+        EN = "en", _("English")
 
     phone = PhoneNumberField(_("téléphone"), unique=True)
     email = models.EmailField(_("email"), blank=True)
@@ -163,6 +164,7 @@ class SiteText(models.Model):
     key = models.CharField(_("texte"), max_length=40, unique=True)
     fr = models.TextField(_("français"), blank=True)
     ar = models.TextField(_("arabe"), blank=True)
+    en = models.TextField(_("anglais"), blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

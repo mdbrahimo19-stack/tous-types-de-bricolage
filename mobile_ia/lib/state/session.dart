@@ -90,7 +90,11 @@ class Session extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     AppFlavor.role ??= prefs.getString(_kRole);
     locale = prefs.getString(_kLocale) ??
-        (PlatformDispatcher.instance.locale.languageCode == 'ar' ? 'ar' : 'fr');
+        (switch (PlatformDispatcher.instance.locale.languageCode) {
+          'ar' => 'ar',
+          'en' => 'en',
+          _ => 'fr',
+        });
 
     await api.loadTokens();
     if (api.hasSession) {
@@ -142,7 +146,7 @@ class Session extends ChangeNotifier {
     await api.saveTokens(tokens['access'] as String, tokens['refresh'] as String);
     user = (data['user'] as Map).cast<String, dynamic>();
     final serverLang = user!['language'] as String?;
-    if (serverLang == 'fr' || serverLang == 'ar') locale = serverLang!;
+    if (serverLang == 'fr' || serverLang == 'ar' || serverLang == 'en') locale = serverLang!;
     await _savePrefs();
     await _cacheUser();
     notifyListeners();

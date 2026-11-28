@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ttb_mobile/location.dart';
 
-Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+// textes vérifiés en français (sans langue précisée, Flutter choisirait l'anglais)
+Widget _wrap(Widget child) => MaterialApp(
+      locale: const Locale('fr'),
+      supportedLocales: const [Locale('fr')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      home: Scaffold(body: child),
+    );
 
 void main() {
   test('coordonnées envoyées avec 6 décimales au plus', () {

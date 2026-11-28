@@ -20,7 +20,7 @@ num? toNum(dynamic v) => v == null ? null : (v is num ? v : num.tryParse('$v'));
 String money(BuildContext context, dynamic v) {
   final n = toNum(v);
   if (n == null) return '—';
-  final f = NumberFormat.decimalPattern(context.isArabic ? 'ar_DZ' : 'fr');
+  final f = NumberFormat.decimalPattern(switch (context.lang) { 'ar' => 'ar_DZ', 'en' => 'en', _ => 'fr' });
   return '${f.format(n.round())} ${context.tr('da')}';
 }
 
@@ -35,7 +35,7 @@ String formatDate(BuildContext context, dynamic iso, {bool withTime = true}) {
   if (iso == null) return '—';
   final d = DateTime.tryParse('$iso')?.toLocal();
   if (d == null) return '—';
-  final loc = context.isArabic ? 'ar' : 'fr';
+  final loc = context.lang;
   return withTime ? DateFormat.yMMMd(loc).add_Hm().format(d) : DateFormat.yMMMd(loc).format(d);
 }
 

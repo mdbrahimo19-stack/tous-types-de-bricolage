@@ -42,7 +42,7 @@ class PriceEstimateInput(serializers.Serializer):
     description = serializers.CharField(min_length=5, max_length=2000)
     urgency = serializers.ChoiceField(choices=services.URGENCIES, default="this_week")
     wilaya = serializers.PrimaryKeyRelatedField(queryset=Wilaya.objects.all(), required=False, allow_null=True)
-    language = serializers.ChoiceField(choices=["fr", "ar"], required=False)
+    language = serializers.ChoiceField(choices=["fr", "ar", "en"], required=False)
 
 
 class PriceEstimateView(_AIView):

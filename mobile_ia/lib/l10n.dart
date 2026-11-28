@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import 'l10n_en.dart';
+
 /// Textes de l'interface en français et en arabe (l'arabe active automatiquement le RTL).
 const Map<String, Map<String, String>> _strings = {
   'fr': {
@@ -149,13 +151,13 @@ const Map<String, Map<String, String>> _strings = {
     'his_quote': 'Son devis',
     'accept_this_quote': 'Accepter ce devis',
     'role_question': 'Bienvenue ! Que voulez-vous faire ?',
-    'role_client': 'Je cherche un artisan',
+    'role_client': 'Je cherche un professionnel',
     'role_client_sub': 'Publier une demande et recevoir des devis',
-    'role_pro': 'Je suis artisan',
+    'role_pro': 'Je suis professionnel (artisan, prestataire)',
     'role_pro_sub': 'Recevoir les demandes près de chez moi',
     'role_hint': 'Vous pourrez changer à tout moment dans le Profil.',
     'change_space': 'Changer d\'espace',
-    'switch_to_pro': 'Passer à l\'espace artisan',
+    'switch_to_pro': 'Passer à l\'espace professionnel',
     'switch_to_pro_sub': 'Recevoir des demandes et envoyer des devis',
     'switch_to_client': 'Passer à l\'espace client',
     'switch_to_client_sub': 'Publier une demande pour vous-même',
@@ -515,13 +517,13 @@ const Map<String, Map<String, String>> _strings = {
     'his_quote': 'عرضه',
     'accept_this_quote': 'قبول هذا العرض',
     'role_question': 'مرحباً! ماذا تريد أن تفعل؟',
-    'role_client': 'أبحث عن حرفي',
+    'role_client': 'أبحث عن مهني',
     'role_client_sub': 'انشر طلباً واستلم عروض الأسعار',
-    'role_pro': 'أنا حرفي',
+    'role_pro': 'أنا مهني (حرفي، مقدّم خدمة)',
     'role_pro_sub': 'استلم الطلبات القريبة مني',
     'role_hint': 'يمكنك التغيير في أي وقت من الملف.',
     'change_space': 'تغيير الفضاء',
-    'switch_to_pro': 'الانتقال إلى فضاء الحرفي',
+    'switch_to_pro': 'الانتقال إلى فضاء المهني',
     'switch_to_pro_sub': 'استلم الطلبات وأرسل العروض',
     'switch_to_client': 'الانتقال إلى فضاء الزبون',
     'switch_to_client_sub': 'انشر طلباً لنفسك',
@@ -740,21 +742,38 @@ const Map<String, Map<String, String>> _strings = {
   },
 };
 
+/// Langues de l'application : français, arabe (RTL) et anglais.
+const appLanguages = ['fr', 'ar', 'en'];
+
 extension Tr on BuildContext {
-  bool get isArabic => Localizations.localeOf(this).languageCode == 'ar';
+  /// 'fr', 'ar' ou 'en' (toute autre langue du téléphone → français).
+  String get lang {
+    final code = Localizations.localeOf(this).languageCode;
+    return appLanguages.contains(code) ? code : 'fr';
+  }
+
+  bool get isArabic => lang == 'ar';
+  bool get isEnglish => lang == 'en';
 
   /// Traduction avec remplacement des variables : tr('hello', {'name': 'Ali'}).
+  /// Une clé absente en anglais ou en arabe s'affiche en français.
   String tr(String key, [Map<String, Object?> args = const {}]) {
-    final lang = isArabic ? 'ar' : 'fr';
-    var text = _strings[lang]![key] ?? _strings['fr']![key] ?? key;
+    final table = isEnglish ? stringsEn : _strings[lang]!;
+    var text = table[key] ?? _strings['fr']![key] ?? key;
     args.forEach((k, v) => text = text.replaceAll('{$k}', '${v ?? ''}'));
     return text;
+  }
+
+  /// Nom dans la langue choisie à partir du nom français et arabe (anglais : table namesEn).
+  String localName(String fr, String? ar) {
+    if (isArabic && ar != null && ar.isNotEmpty) return ar;
+    if (isEnglish) return namesEn[fr] ?? fr;
+    return fr;
   }
 
   /// Libellé localisé d'un objet API qui a `name_fr` / `name_ar`.
   String nameOf(Map? obj) {
     if (obj == null) return '';
-    final ar = obj['name_ar'] as String?;
-    return (isArabic && ar != null && ar.isNotEmpty) ? ar : (obj['name_fr'] as String? ?? '');
+    return localName(obj['name_fr'] as String? ?? '', obj['name_ar'] as String?);
   }
 }

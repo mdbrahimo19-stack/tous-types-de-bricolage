@@ -9,6 +9,9 @@ import '../state/session.dart';
 import '../widgets/common.dart';
 import '../widgets/floating_services.dart';
 
+/// Langues proposées, chacune écrite dans sa propre langue.
+const _languageNames = [('fr', 'Français'), ('ar', 'العربية'), ('en', 'English')];
+
 /// Étape 1 : numéro de téléphone. Connexion si le compte existe, sinon inscription.
 class PhoneScreen extends StatefulWidget {
   const PhoneScreen({super.key});
@@ -112,18 +115,28 @@ class _PhoneScreenState extends State<PhoneScreen> {
                       onPressed: () => showServerDialog(context),
                     ),
                     const Spacer(),
-                    TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: onHero,
-                        backgroundColor: Colors.white.withValues(alpha: 0.16),
-                        shape: const StadiumBorder(),
-                      ),
-                      icon: const Icon(Icons.translate, size: 18),
-                      onPressed: () => session.setLocale(
-                        session.locale == 'ar' ? 'fr' : 'ar',
-                      ),
-                      label: Text(
-                        session.locale == 'ar' ? 'Français' : 'العربية',
+                    // langue : français, arabe ou anglais
+                    PopupMenuButton<String>(
+                      tooltip: context.tr('language'),
+                      onSelected: session.setLocale,
+                      itemBuilder: (_) => [
+                        for (final (code, label) in _languageNames)
+                          CheckedPopupMenuItem(value: code, checked: session.locale == code, child: Text(label)),
+                      ],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: ShapeDecoration(
+                          color: Colors.white.withValues(alpha: 0.16),
+                          shape: const StadiumBorder(),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.translate, size: 18, color: onHero),
+                          const SizedBox(width: 8),
+                          Text(
+                            _languageNames.firstWhere((l) => l.$1 == session.locale, orElse: () => _languageNames.first).$2,
+                            style: TextStyle(color: onHero, fontWeight: FontWeight.w600),
+                          ),
+                        ]),
                       ),
                     ),
                   ],

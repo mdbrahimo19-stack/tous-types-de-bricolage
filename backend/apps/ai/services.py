@@ -34,7 +34,7 @@ DRAFT_SCHEMA = {
         "budget_min": _NULLABLE_INT,
         "budget_max": _NULLABLE_INT,
         "missing_info": {"type": "array", "items": {"type": "string"}},
-        "language": {"type": "string", "enum": ["fr", "ar"]},
+        "language": {"type": "string", "enum": ["fr", "ar", "en"]},
     },
     "required": [
         "category_id", "title", "description", "urgency",
@@ -108,12 +108,15 @@ def accepted_quote_stats(category, wilaya=None, days=365):
     }
 
 
+_LANGUAGE_NAMES = {"fr": "français", "ar": "arabe", "en": "anglais"}
+
+
 def estimate_price(category, description, urgency="this_week", wilaya=None, language="fr"):
     lines = [
         f"Catégorie : {category} (unité : {category.get_unit_display()})",
         f"Urgence : {urgency}",
         f"Wilaya : {wilaya.name_fr if wilaya else 'non précisée'}",
-        f"Langue de l'explication : {'arabe' if language == 'ar' else 'français'}",
+        f"Langue de l'explication : {_LANGUAGE_NAMES.get(language, 'français')}",
     ]
     if category.price_min is not None or category.price_max is not None:
         lines.append(f"Fourchette indicative du catalogue : {category.price_min or '?'} – {category.price_max or '?'} DA")

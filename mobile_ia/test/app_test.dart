@@ -1,11 +1,13 @@
 import 'dart:ui' show AccessibilityFeatures;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ttb_mobile/api/api_client.dart';
 import 'package:ttb_mobile/flavor.dart';
+import 'package:ttb_mobile/l10n.dart';
 import 'package:ttb_mobile/main.dart';
 import 'package:ttb_mobile/state/session.dart';
 import 'package:ttb_mobile/widgets/floating_services.dart';
@@ -30,8 +32,8 @@ void main() {
     final session = Session(ApiClient());
     await tester.pumpWidget(ChangeNotifierProvider.value(value: session, child: const TtbApp()));
     await tester.pump();
-    expect(find.text('Je cherche un artisan'), findsOneWidget);
-    await tester.tap(find.text('Je suis artisan'));
+    expect(find.text('Je cherche un professionnel'), findsOneWidget);
+    await tester.tap(find.text('Je suis professionnel (artisan, prestataire)'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(session.role, 'pro');
     expect(session.asProvider, isTrue);
@@ -55,6 +57,9 @@ void main() {
     expect(find.text('Numéro de téléphone'), findsOneWidget);
     expect(find.byType(ServiceBubble), findsWidgets);
 
+    // menu des langues : Français · العربية · English
+    await tester.tap(find.text('Français'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('العربية'));
     await tester.pumpAndSettle();
 
@@ -64,6 +69,42 @@ void main() {
       TextDirection.rtl,
     );
     expect(session.locale, 'ar');
+  });
+
+  testWidgets('connexion en anglais (gauche à droite, services traduits)', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = _NoAnimations();
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    SharedPreferences.setMockInitialValues({});
+    final session = Session(ApiClient());
+
+    await tester.pumpWidget(ChangeNotifierProvider.value(value: session, child: const TtbApp()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Français'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+
+    expect(session.locale, 'en');
+    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Phone number'), findsOneWidget);
+    expect(Directionality.of(tester.element(find.text('Continue'))), TextDirection.ltr);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('noms des services dans les trois langues', (tester) async {
+    final names = <String, String>{};
+    for (final lang in ['fr', 'ar', 'en']) {
+      await tester.pumpWidget(MaterialApp(
+        locale: Locale(lang),
+        supportedLocales: const [Locale('fr'), Locale('ar'), Locale('en')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: Builder(builder: (context) {
+          names[lang] = context.nameOf({'name_fr': 'Plomberie', 'name_ar': 'سباكة'});
+          return const SizedBox();
+        }),
+      ));
+    }
+    expect(names, {'fr': 'Plomberie', 'ar': 'سباكة', 'en': 'Plumbing'});
   });
 
   testWidgets('les services flottent et défilent sans erreur', (tester) async {

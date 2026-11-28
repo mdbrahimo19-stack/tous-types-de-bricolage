@@ -89,7 +89,9 @@ class ProfileScreen extends StatelessWidget {
               segments: const [
                 ButtonSegment(value: 'fr', label: Text('FR')),
                 ButtonSegment(value: 'ar', label: Text('ع')),
+                ButtonSegment(value: 'en', label: Text('EN')),
               ],
+              showSelectedIcon: false,
               selected: {session.locale},
               onSelectionChanged: (s) => session.setLocale(s.first),
             ),

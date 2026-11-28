@@ -15,7 +15,7 @@ import 'widgets/common.dart';
 
 /// Ouvre la politique de confidentialité (page publique du serveur, français + arabe).
 Future<void> openPrivacyPolicy(BuildContext context) async {
-  final anchor = context.isArabic ? '#ar' : '#fr';
+  final anchor = '#${context.lang}';
   final url = Uri.parse('${ServerConfig.baseUrl}/confidentialite/$anchor');
   if (!await launchUrl(url, mode: LaunchMode.externalApplication) && context.mounted) {
     showInfo(context, context.tr('card_open_failed'));
