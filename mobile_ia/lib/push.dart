@@ -16,7 +16,13 @@ class Push {
   Push._();
 
   /// Même identifiant que le serveur (backend/apps/marketplace/push_fcm.py).
-  static const channelId = 'bricool_alerts';
+  /// (Android ne permet pas de changer le son d'un canal existant : nouveau son = nouvel identifiant.)
+  static const channelId = 'bricool_ring';
+  static const _channelName = 'Sonnerie BRICOOL (demandes, devis, messages)';
+
+  /// Sonnerie de ~4 s (android/app/src/main/res/raw/bricool_ring.wav), au volume de la sonnerie du téléphone.
+  static const _sound = RawResourceAndroidNotificationSound('bricool_ring');
+  static final _vibration = Int64List.fromList([0, 600, 300, 600, 300, 600]);
 
   static bool available = false;
   static String? _token;
@@ -41,14 +47,18 @@ class Push {
         iOS: DarwinInitializationSettings(),
       ),
     );
-    await _local
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(const AndroidNotificationChannel(
-          channelId,
-          'Nouvelles demandes et messages',
-          description: 'Sonne quand un client publie une demande près de vous, envoie un devis ou un message.',
-          importance: Importance.high,
-        ));
+    final android = _local.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await android?.createNotificationChannel(AndroidNotificationChannel(
+      channelId,
+      _channelName,
+      description: 'Sonne quand un client publie une demande près de vous, envoie un devis ou un message.',
+      importance: Importance.max,
+      sound: _sound,
+      vibrationPattern: _vibration,
+      audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
+    ));
+    // ancien canal (simple « ding ») : retiré
+    await android?.deleteNotificationChannel(channelId: 'bricool_alerts');
 
     // app ouverte : Android n'affiche rien tout seul, on montre la notification nous-mêmes (avec le son)
     FirebaseMessaging.onMessage.listen((message) {
@@ -58,14 +68,17 @@ class Push {
         id: message.hashCode,
         title: n.title,
         body: n.body,
-        notificationDetails: const NotificationDetails(
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             channelId,
-            'Nouvelles demandes et messages',
-            importance: Importance.high,
-            priority: Priority.high,
+            _channelName,
+            importance: Importance.max,
+            priority: Priority.max,
+            sound: _sound,
+            vibrationPattern: _vibration,
+            audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
           ),
-          iOS: DarwinNotificationDetails(presentSound: true),
+          iOS: const DarwinNotificationDetails(presentSound: true),
         ),
       );
     });

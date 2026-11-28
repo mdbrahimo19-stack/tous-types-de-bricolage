@@ -11,8 +11,10 @@ from django.conf import settings
 logger = logging.getLogger("ttb.push")
 
 SCOPE = "https://www.googleapis.com/auth/firebase.messaging"
-# même identifiant que le canal créé par l'app (lib/push.dart) : sonnerie + priorité haute
-ANDROID_CHANNEL = "bricool_alerts"
+# même identifiant que le canal créé par l'app (lib/push.dart) : sonnerie BRICOOL + priorité haute
+ANDROID_CHANNEL = "bricool_ring"
+# sonnerie de ~4 s embarquée dans l'app (android/app/src/main/res/raw/bricool_ring.wav)
+ANDROID_SOUND = "bricool_ring"
 
 _lock = threading.Lock()
 _session = None
@@ -45,7 +47,13 @@ def build_message(token, title, body, data):
             "data": {str(k): str(v) for k, v in (data or {}).items()},
             "android": {
                 "priority": "high",
-                "notification": {"channel_id": ANDROID_CHANNEL, "sound": "default"},
+                "notification": {
+                    "channel_id": ANDROID_CHANNEL,
+                    "sound": ANDROID_SOUND,
+                    "default_vibrate_timings": False,
+                    "vibrate_timings": ["0s", "0.6s", "0.3s", "0.6s", "0.3s", "0.6s"],
+                    "notification_priority": "PRIORITY_MAX",
+                },
             },
             "apns": {"payload": {"aps": {"sound": "default"}}},
         }

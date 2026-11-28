@@ -56,7 +56,7 @@ class FcmPushTests(TestCase):
         msg = body["message"]
         self.assertEqual(msg["notification"]["title"], "Nouvelle demande près de vous")
         self.assertEqual(msg["android"]["priority"], "high")
-        self.assertEqual(msg["android"]["notification"]["sound"], "default")
+        self.assertEqual(msg["android"]["notification"]["sound"], "bricool_ring")  # vraie sonnerie, pas un « ding »
         self.assertEqual(msg["android"]["notification"]["channel_id"], push_fcm.ANDROID_CHANNEL)
         self.assertEqual(msg["data"], {"request_id": "7"})  # FCM n'accepte que du texte
         # l'app désinstallée est oubliée, l'autre téléphone est gardé
