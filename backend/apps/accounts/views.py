@@ -9,6 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from . import privacy
 from .models import User
 from .otp import issue_otp, verify_otp
+from .site_en import CATEGORY_NAMES_EN, SITE_TEXT_EN, category_name
 from .sms import SMSError
 from .serializers import (
     OTPRequestSerializer,
@@ -189,7 +190,7 @@ _SITE_TEXT = {
         "meta": "BRICOOL met en relation clients et artisans vérifiés en Algérie : plomberie, électricité, peinture, "
                 "climatisation et plus. Devis gratuits, paiement à la fin.",
         "nav_label": "Menu", "nav_how": "Comment ça marche", "nav_apps": "Les applications", "nav_faq": "Questions",
-        "switch": "العربية", "eyebrow": "Artisans vérifiés partout en Algérie",
+        "eyebrow": "Artisans vérifiés partout en Algérie",
         "h1": "Trouvez le bon artisan, près de chez vous",
         "lead": "Décrivez votre problème : BRICOOL l'envoie automatiquement aux artisans vérifiés les plus proches. "
                 "Comparez leurs devis, discutez, et payez seulement à la fin du travail.",
@@ -245,7 +246,7 @@ _SITE_TEXT = {
         "tagline": "اعثر على الحرفي المناسب بالقرب منك",
         "meta": "يربط BRICOOL بين الزبائن والحرفيين الموثّقين في الجزائر: سباكة، كهرباء، دهن، تكييف وغيرها. عروض مجانية والدفع في النهاية.",
         "nav_label": "القائمة", "nav_how": "كيف يعمل", "nav_apps": "التطبيقات", "nav_faq": "أسئلة",
-        "switch": "Français", "eyebrow": "حرفيون موثّقون في كل الجزائر",
+        "eyebrow": "حرفيون موثّقون في كل الجزائر",
         "h1": "اعثر على الحرفي المناسب بالقرب منك",
         "lead": "صف مشكلتك: يرسلها BRICOOL تلقائياً إلى أقرب الحرفيين الموثّقين. قارن العروض، تحدّث معهم، وادفع فقط عند انتهاء العمل.",
         "dl_client": "حمّل BRICOOL", "dl_client_sub": "أبحث عن حرفي", "space_client": "فضاء الزبون", "space_pro": "فضاء المهني",
@@ -291,7 +292,11 @@ _SITE_TEXT = {
         "promo_client_title": "مشكلة في البيت؟ BRICOOL يتكفّل بها",
         "promo_client_text": "مجاني للزبائن. عروض خلال دقائق من حرفيين موثّقين قريبين منك.",
     },
+    "en": SITE_TEXT_EN,
 }
+
+# langues du site : chaque langue est écrite dans sa propre langue
+_SITE_LANGUAGES = [("fr", "Français"), ("ar", "العربية"), ("en", "English")]
 
 
 def _site_live_data(lang):
@@ -316,7 +321,6 @@ def _site_live_data(lang):
         "wilayas": verified.exclude(base_wilaya=None).values("base_wilaya").distinct().count(),
         "rating": f"{rating:.1f}".replace(".", ",") if rating else None,
     }
-    name_field = "name_ar" if lang == "ar" else "name_fr"
     categories = (
         Category.objects.filter(parent__isnull=True)
         .annotate(n=Count("providers", filter=Q(providers__provider__in=verified), distinct=True))
@@ -334,8 +338,8 @@ def _site_live_data(lang):
             "name": p.business_name or p.user.full_name or "Artisan",
             "photo": p.user.photo.url if p.user.photo else "",
             "initials": "".join(w[0] for w in (p.business_name or p.user.full_name or "A").split()[:2]).upper(),
-            "trade": getattr(cat.category, name_field, "") if cat else "",
-            "wilaya": getattr(p.base_wilaya, name_field, "") if p.base_wilaya_id else "",
+            "trade": category_name(cat.category, lang) if cat else "",
+            "wilaya": category_name(p.base_wilaya, lang) if p.base_wilaya_id else "",
             "rating": f"{p.rating_avg:.1f}".replace(".", ",") if p.reviews_count else "",
             "missions": p.missions_count,
         })
@@ -345,7 +349,7 @@ def _site_live_data(lang):
     ]
     return {
         "stats": stats,
-        "categories": [{"name": getattr(c, name_field) or c.name_fr, "n": c.n} for c in categories],
+        "categories": [{"name": category_name(c, lang), "n": c.n} for c in categories],
         "featured": featured,
         "latest_reviews": latest,
         "free_points": settings.POINTS_WELCOME_FREE,
@@ -353,14 +357,16 @@ def _site_live_data(lang):
 
 
 def landing(request):
-    """Site vitrine public (français / arabe) : présentation de BRICOOL, données en direct, téléchargement."""
+    """Site vitrine public (français / arabe / anglais) : présentation de BRICOOL, données en direct, téléchargement."""
     from .models import SiteText
 
-    lang = "ar" if request.GET.get("lang") == "ar" else "fr"
+    lang = request.GET.get("lang")
+    if lang not in _SITE_TEXT:
+        lang = "fr"
     texts = dict(_SITE_TEXT[lang], announcement="")
     # textes modifiés par l'équipe dans l'administration (Textes du site web)
     for row in SiteText.objects.all():
-        value = (row.ar if lang == "ar" else row.fr).strip()
+        value = (getattr(row, lang) or "").strip()
         if value and row.key in texts and isinstance(texts[row.key], str):
             texts[row.key] = value
     return render(request, "site/accueil.html", {
@@ -368,8 +374,11 @@ def landing(request):
         "t": texts,
         "lang": lang,
         "dir": "rtl" if lang == "ar" else "ltr",
-        "other_lang": "fr" if lang == "ar" else "ar",
-        "tiles": [{"d": d, "label": ar if lang == "ar" else fr} for d, fr, ar in _SITE_TILES],
+        "other_langs": [{"code": c, "label": label} for c, label in _SITE_LANGUAGES if c != lang],
+        "tiles": [
+            {"d": d, "label": ar if lang == "ar" else CATEGORY_NAMES_EN.get(fr, fr) if lang == "en" else fr}
+            for d, fr, ar in _SITE_TILES
+        ],
         "download_client": settings.DOWNLOAD_CLIENT_URL,
         "download_pro": settings.DOWNLOAD_PRO_URL,
         "legal_name": settings.LEGAL_NAME,
@@ -379,7 +388,7 @@ def landing(request):
 
 
 def privacy_policy(request):
-    """Page publique « Politique de confidentialité » (français + arabe), liée depuis les deux apps."""
+    """Page publique « Politique de confidentialité » (français, arabe, anglais), liée depuis l'app."""
     ai_abroad = bool(getattr(settings, "AI_ENABLED", False))
     if ai_abroad:
         transfer = (
@@ -392,9 +401,16 @@ def privacy_policy(request):
             "يرسل المساعد الذكي النصوص التي تكتبها له إلى مزوّد ذكاء اصطناعي خارج الجزائر، ولا يتم ذلك إلا بترخيص "
             "مسبق من السلطة الوطنية. لا تكتب معلومات حساسة للمساعد. تبقى بقية المعطيات معالجة في الجزائر."
         )
+        transfer_en = (
+            "The smart assistant (help describing a request, price estimate, help) sends the texts you write to it "
+            "to an artificial intelligence provider located outside Algeria. This transfer only takes place with "
+            "the prior authorisation of the ANPDP. Do not write sensitive information to the assistant. All other "
+            "data is processed in Algeria."
+        )
     else:
         transfer = "Aucune donnée personnelle n'est transférée hors d'Algérie."
         transfer_ar = "لا يتم نقل أي معطيات شخصية إلى خارج الجزائر."
+        transfer_en = "No personal data is transferred outside Algeria."
     context = {
         "version": settings.PRIVACY_POLICY_VERSION,
         "legal_name": settings.LEGAL_NAME,
@@ -405,6 +421,7 @@ def privacy_policy(request):
         "retention_years": settings.PRIVACY_RETENTION_YEARS,
         "transfer_text": transfer,
         "transfer_text_ar": transfer_ar,
+        "transfer_text_en": transfer_en,
     }
     return render(request, "legal/confidentialite.html", context)
 

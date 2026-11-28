@@ -18,7 +18,7 @@ class OTPVerifySerializer(serializers.Serializer):
     purpose = serializers.ChoiceField(choices=PURPOSES, default="registration")
     full_name = serializers.CharField(required=False, allow_blank=True, max_length=150)
     as_provider = serializers.BooleanField(required=False, default=False)
-    language = serializers.ChoiceField(choices=["fr", "ar"], required=False, default="fr")
+    language = serializers.ChoiceField(choices=["fr", "ar", "en"], required=False, default="fr")
     # consentement explicite à la politique de confidentialité (obligatoire à l'inscription)
     accept_privacy = serializers.BooleanField(required=False, default=False)
 

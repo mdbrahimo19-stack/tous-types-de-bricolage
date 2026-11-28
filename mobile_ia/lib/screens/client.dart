@@ -435,7 +435,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         'description': '${_title.text.trim()}\n${_description.text.trim()}',
         'urgency': _urgency,
         if (_wilaya != null) 'wilaya': _wilaya,
-        'language': context.isArabic ? 'ar' : 'fr',
+        'language': context.lang,
       });
       if (mounted) setState(() => _estimate = (data as Map).cast<String, dynamic>());
     } catch (e) {

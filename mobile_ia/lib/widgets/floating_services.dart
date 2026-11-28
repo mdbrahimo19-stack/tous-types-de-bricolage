@@ -14,7 +14,7 @@ class ServiceItem {
   final String ar;
   final Color color;
 
-  String label(BuildContext context) => context.isArabic ? ar : fr;
+  String label(BuildContext context) => context.localName(fr, ar);
 }
 
 const _blue = Color(0xFF2F80ED);

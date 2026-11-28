@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import 'l10n_en.dart';
+
 /// Textes de l'interface en français et en arabe (l'arabe active automatiquement le RTL).
 const Map<String, Map<String, String>> _strings = {
   'fr': {
@@ -740,21 +742,38 @@ const Map<String, Map<String, String>> _strings = {
   },
 };
 
+/// Langues de l'application : français, arabe (RTL) et anglais.
+const appLanguages = ['fr', 'ar', 'en'];
+
 extension Tr on BuildContext {
-  bool get isArabic => Localizations.localeOf(this).languageCode == 'ar';
+  /// 'fr', 'ar' ou 'en' (toute autre langue du téléphone → français).
+  String get lang {
+    final code = Localizations.localeOf(this).languageCode;
+    return appLanguages.contains(code) ? code : 'fr';
+  }
+
+  bool get isArabic => lang == 'ar';
+  bool get isEnglish => lang == 'en';
 
   /// Traduction avec remplacement des variables : tr('hello', {'name': 'Ali'}).
+  /// Une clé absente en anglais ou en arabe s'affiche en français.
   String tr(String key, [Map<String, Object?> args = const {}]) {
-    final lang = isArabic ? 'ar' : 'fr';
-    var text = _strings[lang]![key] ?? _strings['fr']![key] ?? key;
+    final table = isEnglish ? stringsEn : _strings[lang]!;
+    var text = table[key] ?? _strings['fr']![key] ?? key;
     args.forEach((k, v) => text = text.replaceAll('{$k}', '${v ?? ''}'));
     return text;
+  }
+
+  /// Nom dans la langue choisie à partir du nom français et arabe (anglais : table namesEn).
+  String localName(String fr, String? ar) {
+    if (isArabic && ar != null && ar.isNotEmpty) return ar;
+    if (isEnglish) return namesEn[fr] ?? fr;
+    return fr;
   }
 
   /// Libellé localisé d'un objet API qui a `name_fr` / `name_ar`.
   String nameOf(Map? obj) {
     if (obj == null) return '';
-    final ar = obj['name_ar'] as String?;
-    return (isArabic && ar != null && ar.isNotEmpty) ? ar : (obj['name_fr'] as String? ?? '');
+    return localName(obj['name_fr'] as String? ?? '', obj['name_ar'] as String?);
   }
 }

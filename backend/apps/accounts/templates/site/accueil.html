@@ -103,7 +103,7 @@
       <a href="#comment">{{ t.nav_how }}</a>
       <a href="#apps">{{ t.nav_apps }}</a>
       <a href="#faq">{{ t.nav_faq }}</a>
-      <a class="lang" href="?lang={{ other_lang }}" hreflang="{{ other_lang }}">{{ t.switch }}</a>
+      {% for l in other_langs %}<a class="lang" href="?lang={{ l.code }}" hreflang="{{ l.code }}" lang="{{ l.code }}">{{ l.label }}</a>{% endfor %}
     </nav>
   </div>
 </header>
@@ -217,7 +217,7 @@
 </main>
 <footer><div class="wrap">
   <div><strong style="color:var(--ink)">BRICOOL</strong></div>
-  <div><a href="mailto:{{ contact_email }}">{{ contact_email }}</a> · <a href="/confidentialite/{% if lang == 'ar' %}#ar{% endif %}">{{ t.privacy }}</a></div>
+  <div><a href="mailto:{{ contact_email }}">{{ contact_email }}</a> · <a href="/confidentialite/#{{ lang }}">{{ t.privacy }}</a></div>
 </div></footer>
 </body>
 </html>

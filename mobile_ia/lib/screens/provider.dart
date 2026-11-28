@@ -514,7 +514,7 @@ class _FeedDetailScreenState extends State<FeedDetailScreen> {
         'category': r['category'],
         'description': '${r['title']}\n${r['description']}',
         'urgency': r['urgency'],
-        'language': context.isArabic ? 'ar' : 'fr',
+        'language': context.lang,
       });
       if (mounted) setState(() => _estimate = (data as Map).cast<String, dynamic>());
     } catch (e) {

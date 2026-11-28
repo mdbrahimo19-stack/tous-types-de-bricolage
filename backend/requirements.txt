@@ -8,6 +8,9 @@ dj-database-url>=2.3
 Pillow>=11.0
 django-phonenumber-field[phonenumbers]>=8.0
 anthropic>=1.11,<2
+# notifications push (Firebase Cloud Messaging, API HTTP v1)
+google-auth>=2.30
+requests>=2.32
 # production only:
 psycopg[binary]>=3.2
 gunicorn>=23.0

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La sonnerie BRICOOL n'est appelée que par son nom (notifications) : on empêche la compilation de la supprimer. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/bricool_ring" />

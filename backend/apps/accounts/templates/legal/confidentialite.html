@@ -21,7 +21,7 @@
 </head>
 <body>
 <main>
-<nav><a href="#fr">Français</a><a href="#ar">العربية</a></nav>
+<nav><a href="#fr">Français</a><a href="#ar">العربية</a><a href="#en">English</a></nav>
 
 <section id="fr">
 <h1>Politique de confidentialité</h1>
@@ -145,6 +145,80 @@ personnes autorisées, numéros de téléphone masqués avant l'acceptation d'un
 
 <h2>8. السن الأدنى</h2>
 <p>الخدمة مخصّصة للأشخاص البالغين 18 سنة فما فوق.</p>
+</section>
+
+<hr style="margin:40px 0;border:0;border-top:1px solid var(--line)">
+
+<section id="en" lang="en">
+<h1>Privacy policy</h1>
+<p class="meta">BRICOOL app (client space and professional space) · Version {{ version }}</p>
+<p class="meta">This English version is a translation provided for convenience. In case of difference, the French version prevails.</p>
+
+<div class="box">
+<p>BRICOOL connects clients with professionals in Algeria. To do so, we process personal data in accordance
+with <strong>Law No. 18-07 of 10 June 2018</strong> on the protection of natural persons in the processing of
+personal data, as amended and supplemented by <strong>Law No. 25-11 of July 2025</strong>, under the supervision
+of the <strong>ANPDP</strong> (National Authority for the Protection of Personal Data).</p>
+</div>
+
+<h2>1. Data controller</h2>
+<p>{{ legal_name }} — {{ legal_address }}<br>
+Contact about your data: <strong>{{ contact_email }}</strong>{% if dpo %} · Data protection officer: {{ dpo }}{% endif %}<br>
+Declaration to the ANPDP: {{ anpdp_ref }}</p>
+
+<h2>2. Data we process</h2>
+<table>
+<tr><th>Data</th><th>Why</th></tr>
+<tr><td>Phone number, name, language</td><td>To create and secure your account (SMS code)</td></tr>
+<tr><td>Address, municipality, GPS location (if you allow it)</td><td>To send a request to the nearest professionals</td></tr>
+<tr><td>Description and photos of requests, messages, quotes, jobs, reviews</td><td>To provide the matching service</td></tr>
+<tr><td>Professionals: photo, introduction, trades, area, portfolio, verification status</td><td>To present the professional to clients and build trust</td></tr>
+<tr><td>Professionals: points, payments, BaridiMob screenshots, payment references</td><td>To invoice the use of the service</td></tr>
+<tr><td>Days on which you use the app (no time or location), kept for 13 months</td><td>Usage statistics of the service</td></tr>
+</table>
+<p>Card payment: your card number is entered on the secure SATIM page (through our payment provider).
+<strong>BRICOOL never sees or keeps your card number.</strong></p>
+
+<h2>3. Legal basis</h2>
+<p>Your <strong>explicit consent</strong>, given when you register, and the performance of the service you
+request. You can withdraw your consent at any time (see “Your rights”).</p>
+
+<h2>4. Who sees your data</h2>
+<ul>
+<li><strong>Other users, only when necessary</strong>: a professional sees your request (without your number);
+contact details are only exchanged after a quote is accepted. On a professional's public profile, reviews only
+show the client's first name and initial.</li>
+<li><strong>Our technical providers</strong>, only to run the service: sending SMS, online payment
+(Slick-Pay / SATIM), hosting.</li>
+<li><strong>The BRICOOL team</strong>: verification of professionals, payments, disputes.</li>
+</ul>
+<p>We never sell your data.</p>
+
+<h2>5. Transfers outside Algeria</h2>
+<p>{{ transfer_text_en }}</p>
+
+<h2>6. Retention period</h2>
+<ul>
+<li>Account: as long as it is active, then deleted or anonymised at your request or after {{ retention_years }} years of inactivity.</li>
+<li>SMS codes: a few minutes (single use), then erased.</li>
+<li>Payments and invoices: the period required by accounting and tax regulations.</li>
+</ul>
+
+<h2>7. Your rights</h2>
+<p>In accordance with the law, you can request <strong>access</strong> to your data, its <strong>correction</strong>,
+its <strong>erasure</strong>, and <strong>object</strong> to its processing. Write to
+<strong>{{ contact_email }}</strong> or use your profile in the app (“My data”, “Delete my account”). You can also
+contact the <strong>ANPDP</strong>.</p>
+
+<h2>8. Security</h2>
+<p>Login with a single-use SMS code, encrypted exchanges (HTTPS) in production, access limited to authorised
+people, phone numbers hidden until a quote is accepted.</p>
+
+<h2>9. Minimum age</h2>
+<p>The service is reserved for people aged 18 or over.</p>
+
+<h2>10. Changes</h2>
+<p>If this policy changes, the app will ask you to read and accept the new version.</p>
 </section>
 </main>
 </body>
