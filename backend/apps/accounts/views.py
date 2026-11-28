@@ -379,7 +379,7 @@ def landing(request):
 
 
 def privacy_policy(request):
-    """Page publique « Politique de confidentialité » (français + arabe), liée depuis les deux apps."""
+    """Page publique « Politique de confidentialité » (français, arabe, anglais), liée depuis l'app."""
     ai_abroad = bool(getattr(settings, "AI_ENABLED", False))
     if ai_abroad:
         transfer = (
@@ -392,9 +392,16 @@ def privacy_policy(request):
             "يرسل المساعد الذكي النصوص التي تكتبها له إلى مزوّد ذكاء اصطناعي خارج الجزائر، ولا يتم ذلك إلا بترخيص "
             "مسبق من السلطة الوطنية. لا تكتب معلومات حساسة للمساعد. تبقى بقية المعطيات معالجة في الجزائر."
         )
+        transfer_en = (
+            "The smart assistant (help describing a request, price estimate, help) sends the texts you write to it "
+            "to an artificial intelligence provider located outside Algeria. This transfer only takes place with "
+            "the prior authorisation of the ANPDP. Do not write sensitive information to the assistant. All other "
+            "data is processed in Algeria."
+        )
     else:
         transfer = "Aucune donnée personnelle n'est transférée hors d'Algérie."
         transfer_ar = "لا يتم نقل أي معطيات شخصية إلى خارج الجزائر."
+        transfer_en = "No personal data is transferred outside Algeria."
     context = {
         "version": settings.PRIVACY_POLICY_VERSION,
         "legal_name": settings.LEGAL_NAME,
@@ -405,6 +412,7 @@ def privacy_policy(request):
         "retention_years": settings.PRIVACY_RETENTION_YEARS,
         "transfer_text": transfer,
         "transfer_text_ar": transfer_ar,
+        "transfer_text_en": transfer_en,
     }
     return render(request, "legal/confidentialite.html", context)
 

@@ -39,6 +39,17 @@ class OTPAuthFlowTests(TestCase):
         self.assertTrue(ClientProfile.objects.filter(user=user).exists())
         self.assertTrue(ProviderProfile.objects.filter(user=user).exists())
 
+    def test_registration_in_english(self):
+        code = self._request_code()
+        resp = self.client.post(
+            "/api/auth/otp/verify/",
+            {"phone": PHONE, "code": code, "purpose": "registration", "full_name": "Sam",
+             "language": "en", "accept_privacy": True},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertEqual(resp.data["user"]["language"], "en")
+
     def test_wrong_code_is_rejected_and_counts_attempts(self):
         self._request_code()
         resp = self.client.post(
@@ -115,6 +126,10 @@ class OTPAuthFlowTests(TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertContains(page, "18-07")
         self.assertContains(page, "سياسة الخصوصية")
+        # version anglaise (troisième langue de l'app)
+        self.assertContains(page, 'id="en"')
+        self.assertContains(page, "Privacy policy")
+        self.assertContains(page, "Law No. 18-07")
 
     def test_login_requires_existing_account(self):
         resp = self.client.post(

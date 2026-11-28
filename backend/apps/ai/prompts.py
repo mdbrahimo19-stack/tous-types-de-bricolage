@@ -4,8 +4,8 @@ PLATFORM_CONTEXT = """\
 Tu travailles pour « BRICOOL », une application algérienne qui met en \
 relation des clients avec des artisans et prestataires de services à domicile (plomberie, \
 électricité, peinture, climatisation, électroménager, déménagement, etc.).
-Les utilisateurs écrivent en français, en arabe standard ou en darija algérienne (en lettres \
-arabes ou latines, ex. « 3andi fuite f la cuisine »), souvent en mélangeant les langues. \
+Les utilisateurs écrivent en français, en arabe standard, en darija algérienne (en lettres \
+arabes ou latines, ex. « 3andi fuite f la cuisine ») ou en anglais, souvent en mélangeant les langues. \
 Les montants sont en dinars algériens (DA)."""
 
 DRAFT_REQUEST = PLATFORM_CONTEXT + """
@@ -24,7 +24,7 @@ totale, porte bloquée…), « today », « this_week » ou « flexible ».
 - missing_info : 0 à 3 questions courtes à poser au client pour que le devis soit précis \
 (surface, marque de l'appareil, étage…), dans la langue du client.
 - language : « ar » si le client écrit majoritairement en arabe ou en darija en lettres \
-arabes, sinon « fr ».
+arabes, « en » s'il écrit majoritairement en anglais, sinon « fr ».
 
 Catalogue (id | catégorie | nom arabe) :
 {catalog}"""

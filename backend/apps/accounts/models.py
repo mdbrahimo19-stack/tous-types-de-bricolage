@@ -33,6 +33,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Language(models.TextChoices):
         FR = "fr", _("Français")
         AR = "ar", _("العربية")
+        EN = "en", _("English")
 
     phone = PhoneNumberField(_("téléphone"), unique=True)
     email = models.EmailField(_("email"), blank=True)

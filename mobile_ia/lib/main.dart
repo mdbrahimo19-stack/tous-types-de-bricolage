@@ -16,6 +16,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('fr');
   await initializeDateFormatting('ar');
+  await initializeDateFormatting('en');
   await ServerConfig.load();
   final session = Session(ApiClient());
   // l'app s'affiche tout de suite (écran de chargement) : elle ne reste jamais figée
@@ -116,7 +117,7 @@ class TtbApp extends StatelessWidget {
       title: AppFlavor.name,
       debugShowCheckedModeBanner: false,
       locale: Locale(session.locale),
-      supportedLocales: const [Locale('fr'), Locale('ar')],
+      supportedLocales: const [Locale('fr'), Locale('ar'), Locale('en')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
