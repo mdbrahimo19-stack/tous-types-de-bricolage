@@ -164,6 +164,7 @@ class SiteText(models.Model):
     key = models.CharField(_("texte"), max_length=40, unique=True)
     fr = models.TextField(_("français"), blank=True)
     ar = models.TextField(_("arabe"), blank=True)
+    en = models.TextField(_("anglais"), blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

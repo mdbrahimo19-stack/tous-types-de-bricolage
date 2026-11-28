@@ -111,6 +111,25 @@ class OTPAuthFlowTests(TestCase):
         self.assertContains(ar, 'dir="rtl"')
         self.assertContains(ar, "اعثر على الحرفي المناسب")
 
+    def test_landing_site_in_english(self):
+        from .models import SiteText
+
+        en = self.client.get("/?lang=en")
+        self.assertEqual(en.status_code, 200)
+        self.assertContains(en, 'lang="en"')
+        self.assertContains(en, 'dir="ltr"')
+        self.assertContains(en, "Find the right professional")
+        self.assertContains(en, "One app, two spaces")
+        self.assertContains(en, "Plumbing")
+        self.assertContains(en, "/confidentialite/#en")
+        # liens vers les deux autres langues
+        self.assertContains(en, "?lang=fr")
+        self.assertContains(en, "?lang=ar")
+        # texte anglais modifiable dans l'administration
+        SiteText.objects.create(key="h1", fr="", ar="", en="Your pro in 1 click")
+        self.assertContains(self.client.get("/?lang=en"), "Your pro in 1 click")
+        self.assertNotContains(self.client.get("/"), "Your pro in 1 click")
+
     def test_landing_texts_editable_in_admin(self):
         from .models import SiteText
 

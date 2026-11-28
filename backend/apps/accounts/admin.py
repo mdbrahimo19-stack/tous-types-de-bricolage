@@ -66,8 +66,8 @@ class SiteTextAdmin(admin.ModelAdmin):
     """Textes du site vitrine (bricool.dz) : ce qui est rempli ici remplace le texte par défaut.
     Laisser vide = texte par défaut. « announcement » = bannière d'annonce en haut du site."""
 
-    list_display = ("key", "fr", "ar", "updated_at")
-    search_fields = ("key", "fr", "ar")
+    list_display = ("key", "fr", "ar", "en", "updated_at")
+    search_fields = ("key", "fr", "ar", "en")
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.name == "key":
