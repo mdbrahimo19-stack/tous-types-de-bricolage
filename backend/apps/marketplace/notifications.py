@@ -2,8 +2,7 @@
 
 Backend push pluggable (comme les SMS) :
 - `console` : journalise seulement (dev)
-- `fcm` : à implémenter avec firebase-admin quand le compte de service sera dispo
-  (le projet Firebase `ttb-dev-2bfa8` existe déjà, FCM est gratuit).
+- `fcm` : Firebase Cloud Messaging (gratuit), voir push_fcm.py ; le téléphone sonne même app fermée.
 """
 import logging
 
@@ -22,8 +21,13 @@ def _send_push(user, title, body, data):
     if backend == "console":
         logger.info("PUSH → %s (%d appareil·s) : %s", user, len(tokens), title)
         return
-    if backend == "fcm":  # pragma: no cover - à implémenter
-        raise NotImplementedError("Backend push 'fcm' non implémenté (voir firebase-admin).")
+    if backend == "fcm":
+        from . import push_fcm
+
+        dead = push_fcm.send(tokens, title, body, data)
+        if dead:  # application désinstallée : on oublie ces appareils
+            user.devices.filter(token__in=dead).delete()
+        return
     raise NotImplementedError(f"PUSH_BACKEND inconnu : {backend!r}")
 
 

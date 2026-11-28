@@ -6,6 +6,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Notifications push : le fichier Firebase (google-services.json) n'est pas dans Git (dépôt public).
+// En CI il est recréé depuis le secret GOOGLE_SERVICES_JSON ; sans lui, l'app marche sans notifications.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // Clé de signature fixe : android/key.properties (ignoré par Git).
 // En CI, ce fichier est recréé à partir des secrets GitHub (voir .github/workflows/mobile.yml).
 // Sans lui, l'APK est signé avec la clé de test (différente à chaque machine).
@@ -16,12 +22,15 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "dz.ttb.ttb_mobile"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_local_notifications exige au moins le SDK 37
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // exigé par flutter_local_notifications (notifications avec sonnerie)
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -85,4 +94,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

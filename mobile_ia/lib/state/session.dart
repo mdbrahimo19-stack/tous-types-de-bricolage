@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_client.dart';
 import '../flavor.dart';
+import '../push.dart';
 
 /// Session utilisateur : compte connecté et langue.
 /// Le rôle (client / artisan) dépend de l'application installée : BRICOOL ou BRICOOL Pro.
@@ -172,6 +173,7 @@ class Session extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await Push.unregister(api); // ce téléphone ne sonne plus pour ce compte
     final refresh = api.refreshToken;
     if (refresh != null) {
       try {

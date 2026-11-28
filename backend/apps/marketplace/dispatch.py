@@ -101,15 +101,26 @@ def send_wave(req, *, now=None):
         ],
         ignore_conflicts=True,
     )
-    category = req.category.name_fr
     for p, d in chosen:
-        where = f"à {d:.1f} km".replace(".", ",") if d is not None else f"à {req.commune.name_fr}"
-        notify(
-            p.user, "request_nearby", "Nouvelle demande près de vous",
-            f"{category} {where} : « {req.title} ».",
-            data={"request_id": req.id},
-        )
+        title, body = _nearby_text(req, d, p.user.language)
+        notify(p.user, "request_nearby", title, body, data={"request_id": req.id})
     return len(chosen)
+
+
+def _nearby_text(req, distance_km, lang):
+    """Texte de la notification « nouvelle demande », dans la langue de l'artisan (fr / ar / en)."""
+    from apps.accounts.site_en import category_name
+
+    category = category_name(req.category, lang)
+    commune = req.commune.name_ar if lang == "ar" and req.commune.name_ar else req.commune.name_fr
+    if lang == "ar":
+        where = f"على بعد {distance_km:.1f} كم" if distance_km is not None else f"في {commune}"
+        return "طلب جديد بالقرب منك", f"{category} {where}: «{req.title}»."
+    if lang == "en":
+        where = f"{distance_km:.1f} km away" if distance_km is not None else f"in {commune}"
+        return "New request near you", f"{category} {where}: “{req.title}”."
+    where = f"à {distance_km:.1f} km".replace(".", ",") if distance_km is not None else f"à {commune}"
+    return "Nouvelle demande près de vous", f"{category} {where} : « {req.title} »."
 
 
 def advance_due_waves(*, now=None):

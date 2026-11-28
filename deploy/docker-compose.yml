@@ -39,6 +39,8 @@ services:
     volumes:
       - media:/app/media
       - static:/app/staticfiles
+      # fichier Firebase des notifications (deploy/secrets/, ignoré par Git), lecture seule
+      - ./secrets:/app/secrets:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')"]
       interval: 30s
@@ -56,6 +58,8 @@ services:
     depends_on:
       web:
         condition: service_healthy
+    volumes:
+      - ./secrets:/app/secrets:ro  # le scheduler envoie aussi des notifications (vagues suivantes)
     command: sh -c "while true; do python manage.py dispatch_requests; python manage.py expire_requests; python manage.py purge_personal_data; sleep 300; done"
 
   caddy:

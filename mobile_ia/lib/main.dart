@@ -7,6 +7,7 @@ import 'api/api_client.dart';
 import 'config.dart';
 import 'flavor.dart';
 import 'l10n.dart';
+import 'push.dart';
 import 'screens/auth.dart';
 import 'screens/shell.dart';
 import 'state/session.dart';
@@ -18,6 +19,7 @@ Future<void> main() async {
   await initializeDateFormatting('ar');
   await initializeDateFormatting('en');
   await ServerConfig.load();
+  await Push.init(); // notifications avec sonnerie (sans effet si Firebase n'est pas configuré)
   final session = Session(ApiClient());
   // l'app s'affiche tout de suite (écran de chargement) : elle ne reste jamais figée
   // si le serveur est injoignable au démarrage

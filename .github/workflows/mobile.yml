@@ -61,6 +61,18 @@ jobs:
           printf 'storeFile=upload.jks\nstorePassword=%s\nkeyPassword=%s\nkeyAlias=%s\n' \
             "$KS_PASS" "$KEY_PASS" "$KEY_ALIAS" > android/key.properties
 
+      # Notifications avec sonnerie (Firebase) : le fichier n'est pas dans Git (dépôt public),
+      # il est recréé depuis le secret GOOGLE_SERVICES_JSON (contenu du fichier encodé en base64).
+      - name: Fichier Firebase (notifications)
+        env:
+          GS_B64: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -z "$GS_B64" ]; then
+            echo "::warning::Secret GOOGLE_SERVICES_JSON absent : APK sans notifications push."
+            exit 0
+          fi
+          echo "$GS_B64" | base64 -d > android/app/google-services.json
+
       # APK optimisé pour les téléphones récents (arm64).
       # Variable GitHub API_URL (ex. https://51-15-20-30.sslip.io) : adresse du serveur par défaut.
       - name: Build APK (BRICOOL + BRICOOL Pro)

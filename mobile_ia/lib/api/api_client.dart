@@ -77,7 +77,7 @@ class ApiClient {
 
   Future<dynamic> patch(String path, Object body) => _send('PATCH', path, body: body);
 
-  Future<dynamic> delete(String path) => _send('DELETE', path);
+  Future<dynamic> delete(String path, [Object? body]) => _send('DELETE', path, body: body);
 
   /// Liste paginée DRF -> renvoie `results` (ou la liste brute si non paginée).
   Future<List<Json>> list(String path, {Map<String, String>? query}) async {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config.dart';
 import '../l10n.dart';
 import '../privacy.dart';
+import '../push.dart';
 import '../state/session.dart';
 import '../widgets/common.dart';
 import 'client.dart';
@@ -22,6 +23,13 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   bool? _lastMode;
+
+  @override
+  void initState() {
+    super.initState();
+    // connecté : ce téléphone recevra les notifications avec sonnerie (nouvelle demande, devis, message)
+    Push.register(context.read<Session>().api);
+  }
 
   @override
   Widget build(BuildContext context) {
